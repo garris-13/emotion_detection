@@ -2,6 +2,10 @@
 测试datetime修复
 """
 
+import os
+import sys
+
+
 print("测试datetime导入...")
 
 # 测试方式1：正确的导入方式
@@ -34,8 +38,12 @@ except Exception as e:
 
 # 测试health_advisor模块
 print("\n测试health_advisor模块...")
+
 try:
-    from models.health_advisor import HealthAdvisor, EmotionResult
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if project_root not in sys.path:
+        sys.path.append(project_root)
+    from backend.models.health_advisor import HealthAdvisor, EmotionResult
 
     # 创建示例数据
     example_probs = {

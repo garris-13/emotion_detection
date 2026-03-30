@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-03-30T14:06:21.068720",
+  "emotion": "disgust",
+  "emotion_zh": "厌恶",
+  "confidence": 0.7335929866545554,
+  "probabilities": {
+    "anger": 0.04440116889090743,
+    "disgust": 0.7335929866545554,
+    "fear": 0.04440116889090743,
+    "happy": 0.04440116889090743,
+    "sad": 0.04440116889090743,
+    "surprised": 0.04440116889090743,
+    "neutral": 0.04440116889090743
+  },
+  "image_filename": "capture_20260330_140621_033.jpg",
+  "image_path": "images/capture_20260330_140621_033.jpg"
+}

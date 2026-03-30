@@ -1,0 +1,72 @@
+{
+    "history_data": [
+    {
+      "timestamp": "2026-02-26T14:23:55.039000",
+      "emotion": "neutral",
+      "emotion_zh": "平静",
+      "confidence": 0.7253937125205994,
+      "probabilities": {
+        "anger": 0.06179768219590187,
+        "disgust": 1.2368950592644978e-05,
+        "fear": 0.0009124982170760632,
+        "happy": 0.005482416599988937,
+        "sad": 0.19202816486358643,
+        "surprised": 0.014373136684298515,
+        "neutral": 0.7253937125205994
+      },
+      "image_filename": "capture_20260226_142354_903.jpg",
+      "image_path": "images/capture_20260226_142354_903.jpg"
+    },
+    {
+      "timestamp": "2026-02-26T14:24:00.164202",
+      "emotion": "neutral",
+      "emotion_zh": "平静",
+      "confidence": 0.7097870111465454,
+      "probabilities": {
+        "anger": 0.05781213566660881,
+        "disgust": 1.088207045540912e-05,
+        "fear": 0.0010411618277430534,
+        "happy": 0.005982671398669481,
+        "sad": 0.20985066890716553,
+        "surprised": 0.015515441074967384,
+        "neutral": 0.7097870111465454
+      },
+      "image_filename": "capture_20260226_142400_041.jpg",
+      "image_path": "images/capture_20260226_142400_041.jpg"
+    },
+    {
+      "timestamp": "2026-02-26T14:24:05.546315",
+      "emotion": "happy",
+      "emotion_zh": "快乐",
+      "confidence": 0.6537631750106812,
+      "probabilities": {
+        "anger": 0.014994666911661625,
+        "disgust": 0.04696866124868393,
+        "fear": 0.002769493032246828,
+        "happy": 0.6537631750106812,
+        "sad": 0.0657004863023758,
+        "surprised": 0.005441312212496996,
+        "neutral": 0.21036222577095032
+      },
+      "image_filename": "capture_20260226_142405_270.jpg",
+      "image_path": "images/capture_20260226_142405_270.jpg"
+    },
+    {
+      "timestamp": "2026-02-26T14:24:10.607112",
+      "emotion": "sad",
+      "emotion_zh": "悲伤",
+      "confidence": 0.8166437745094299,
+      "probabilities": {
+        "anger": 0.006422563921660185,
+        "disgust": 0.007116703782230616,
+        "fear": 0.01214758399873972,
+        "happy": 0.006089730653911829,
+        "sad": 0.8166437745094299,
+        "surprised": 0.00421325396746397,
+        "neutral": 0.14736635982990265
+      },
+      "image_filename": "capture_20260226_142410_548.jpg",
+      "image_path": "images/capture_20260226_142410_548.jpg"
+    }
+  ]
+}

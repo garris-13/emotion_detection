@@ -236,7 +236,7 @@ def main():
     if tests_passed == total_tests:
         print("🎉 所有测试通过！系统功能正常")
         print("\n🎯 下一步操作:")
-        print("   1. 访问 http://127.0.0.1:8000/examples/emotion_ui.html")
+        print("   1. 访问 http://127.0.0.1:8000/frontend/examples/emotion_ui.html")
         print("   2. 点击'分析监测历史'查看报告")
         print("   3. 如果需要更多数据，可以启动实时监测")
     else:

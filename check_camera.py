@@ -97,9 +97,11 @@ def main():
     print(f"  版本: {cv2.__version__}")
 
     try:
-        # 尝试导入摄像头监测器
-        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-        from api.camera_monitor import CameraMonitor
+        # 尝试导入摄像头监测器（在重组后位于 backend.api）
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if project_root not in sys.path:
+            sys.path.append(project_root)
+        from backend.api.camera_monitor import CameraMonitor
 
         monitor = CameraMonitor()
         status = monitor.get_status()
