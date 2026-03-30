@@ -277,30 +277,26 @@
 
         .results-tabs {
             display: flex;
-            flex-wrap: wrap;
             background: #f8f9fa;
             border-radius: 10px;
             margin-bottom: 20px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            overflow: hidden;
         }
 
         .tab-btn {
             flex: 1;
-            min-width: 120px;
-            padding: 12px 8px;
+            padding: 15px;
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 1rem;
             font-weight: 600;
             color: #7f8c8d;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            white-space: nowrap;
+            gap: 8px;
         }
 
         .tab-btn.active {
@@ -698,6 +694,64 @@
             color: #7f8c8d;
         }
 
+        .ai-subpages-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .ai-subpage-btn {
+            border: 1px solid #dce2ea;
+            background: #ffffff;
+            color: #34495e;
+            border-radius: 10px;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .ai-subpage-btn.active {
+            background: #3498db;
+            color: #ffffff;
+            border-color: #3498db;
+        }
+
+        .ai-subpage {
+            display: none;
+        }
+
+        .ai-subpage.active {
+            display: block;
+        }
+
+        .markdown-report-box {
+            background: #f8fbff;
+            border: 1px solid #d9e8f6;
+            border-radius: 12px;
+            padding: 18px;
+            line-height: 1.7;
+            color: #2c3e50;
+            margin-top: 12px;
+        }
+
+        .markdown-report-box h1,
+        .markdown-report-box h2,
+        .markdown-report-box h3,
+        .markdown-report-box h4 {
+            margin: 14px 0 8px;
+            color: #1f3a56;
+        }
+
+        .markdown-report-box p {
+            margin: 8px 0;
+        }
+
+        .markdown-meta {
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: #5f6f82;
+        }
+
         @media (max-width: 768px) {
             .content-wrapper {
                 flex-direction: column;
@@ -730,6 +784,9 @@
 </head>
 <body>
     <div class="container">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
         <div class="header">
             <h1><i class="fas fa-smile"></i> 表情识别与健康建议系统</h1>
             <p>上传面部图像，系统将识别您的情绪并提供个性化的健康建议和情绪管理策略</p>
@@ -779,286 +836,7 @@
             </div>
         </div>
 
-        <!-- 欢迎页面 -->
-        <div id="welcomePage" style="
-            text-align: center;
-            padding: 60px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            margin-bottom: 30px;
-            color: white;
-        ">
-            <div style="font-size: 80px; margin-bottom: 20px;">😊</div>
-            <h2 style="font-size: 2.5rem; margin-bottom: 15px;">欢迎使用表情识别与健康建议系统</h2>
-            <p style="font-size: 1.2rem; margin-bottom: 30px; opacity: 0.9;">
-                登录后即可体验：情绪识别、健康建议、实时监测、智能对话等功能
-            </p>
-            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                <button class="upload-btn" onclick="document.getElementById('authArea').scrollIntoView({behavior: 'smooth'});" style="
-                    background: white;
-                    color: #667eea;
-                    font-size: 1.1rem;
-                    padding: 15px 40px;
-                ">
-                    <i class="fas fa-sign-in-alt"></i> 立即登录/注册
-                </button>
-            </div>
-            <div style="margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 15px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">📷</div>
-                    <div style="font-weight: 600;">情绪识别</div>
-                    <div style="font-size: 0.9rem; opacity: 0.8;">上传图片识别情绪</div>
-                </div>
-                <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 15px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">💡</div>
-                    <div style="font-weight: 600;">健康建议</div>
-                    <div style="font-size: 0.9rem; opacity: 0.8;">AI生成个性化建议</div>
-                </div>
-                <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 15px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">🎥</div>
-                    <div style="font-weight: 600;">实时监测</div>
-                    <div style="font-size: 0.9rem; opacity: 0.8;">摄像头连续监测</div>
-                </div>
-                <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 15px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">🤖</div>
-                    <div style="font-weight: 600;">智能对话</div>
-                    <div style="font-size: 0.9rem; opacity: 0.8;">AI助手贴心陪伴</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 用户认证区域（始终显示） -->
-        <div id="authArea" style="margin-bottom: 30px;">
-            <div class="advice-section">
-                <h3 style="color: #2c3e50; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-user-lock"></i> 用户登录/注册
-                </h3>
-                
-                <!-- 登录/注册切换标签 -->
-                <div style="display: flex; background: #f8f9fa; border-radius: 10px; margin-bottom: 20px; overflow: hidden;">
-                    <button class="tab-btn active" onclick="switchAuthTab('loginTab', event)" id="loginTabBtn" style="
-                        flex: 1;
-                        padding: 12px;
-                        background: none;
-                        border: none;
-                        cursor: pointer;
-                        font-size: 1rem;
-                        font-weight: 600;
-                        color: #7f8c8d;
-                        transition: all 0.3s;
-                    ">
-                        <i class="fas fa-sign-in-alt"></i> 登录
-                    </button>
-                    <button class="tab-btn" onclick="switchAuthTab('registerTab', event)" id="registerTabBtn" style="
-                        flex: 1;
-                        padding: 12px;
-                        background: none;
-                        border: none;
-                        cursor: pointer;
-                        font-size: 1rem;
-                        font-weight: 600;
-                        color: #7f8c8d;
-                        transition: all 0.3s;
-                    ">
-                        <i class="fas fa-user-plus"></i> 注册
-                    </button>
-                </div>
-                
-                <!-- 登录表单 -->
-                <div id="loginTab" class="auth-tab-content">
-                    <div style="background: #f8f9fa; padding: 25px; border-radius: 12px;">
-                        <h4 style="color: #2c3e50; margin-bottom: 20px;"><i class="fas fa-sign-in-alt"></i> 用户登录</h4>
-                        <div class="context-item" style="margin-bottom: 15px;">
-                            <label>用户名:</label>
-                            <input type="text" id="loginUsername" placeholder="请输入用户名" style="
-                                padding: 12px;
-                                border: 1px solid #ddd;
-                                border-radius: 8px;
-                                font-size: 1rem;
-                                width: 100%;
-                            ">
-                        </div>
-                        <div class="context-item" style="margin-bottom: 20px;">
-                            <label>密码:</label>
-                            <input type="password" id="loginPassword" placeholder="请输入密码" style="
-                                padding: 12px;
-                                border: 1px solid #ddd;
-                                border-radius: 8px;
-                                font-size: 1rem;
-                                width: 100%;
-                            ">
-                        </div>
-                        <button onclick="handleLogin()" style="
-                            width: 100%;
-                            padding: 12px 30px;
-                            background: #3498db;
-                            color: white;
-                            border: none;
-                            border-radius: 50px;
-                            font-size: 1rem;
-                            cursor: pointer;
-                            transition: all 0.3s;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            gap: 10px;
-                        ">
-                            <i class="fas fa-sign-in-alt"></i> 登录
-                        </button>
-                        <p style="text-align: center; margin-top: 15px; color: #7f8c8d; font-size: 0.9rem;">
-                            默认用户: default_user / default123
-                        </p>
-                    </div>
-                </div>
-                
-                <!-- 注册表单 -->
-                <div id="registerTab" class="auth-tab-content" style="display: none;">
-                    <div style="background: #f8f9fa; padding: 25px; border-radius: 12px;">
-                        <h4 style="color: #2c3e50; margin-bottom: 20px;"><i class="fas fa-user-plus"></i> 用户注册</h4>
-                        <div class="context-grid" style="grid-template-columns: 1fr; gap: 15px;">
-                            <div class="context-item">
-                                <label>用户名:</label>
-                                <input type="text" id="regUsername" placeholder="请输入用户名" style="
-                                    padding: 12px;
-                                    border: 1px solid #ddd;
-                                    border-radius: 8px;
-                                    font-size: 1rem;
-                                    width: 100%;
-                                ">
-                            </div>
-                            <div class="context-item">
-                                <label>密码:</label>
-                                <input type="password" id="regPassword" placeholder="请输入密码" style="
-                                    padding: 12px;
-                                    border: 1px solid #ddd;
-                                    border-radius: 8px;
-                                    font-size: 1rem;
-                                    width: 100%;
-                                ">
-                            </div>
-                            <div class="context-item">
-                                <label>确认密码:</label>
-                                <input type="password" id="regConfirmPassword" placeholder="请再次输入密码" style="
-                                    padding: 12px;
-                                    border: 1px solid #ddd;
-                                    border-radius: 8px;
-                                    font-size: 1rem;
-                                    width: 100%;
-                                ">
-                            </div>
-                            <div class="context-item">
-                                <label>邮箱（可选）:</label>
-                                <input type="email" id="regEmail" placeholder="请输入邮箱" style="
-                                    padding: 12px;
-                                    border: 1px solid #ddd;
-                                    border-radius: 8px;
-                                    font-size: 1rem;
-                                    width: 100%;
-                                ">
-                            </div>
-                            <div class="context-item">
-                                <label>年龄组:</label>
-                                <select id="regAgeGroup" style="
-                                    padding: 12px;
-                                    border: 1px solid #ddd;
-                                    border-radius: 8px;
-                                    font-size: 1rem;
-                                    width: 100%;
-                                ">
-                                    <option value="child">儿童 (0-12岁)</option>
-                                    <option value="teen">青少年 (13-19岁)</option>
-                                    <option value="adult" selected>成人 (20-59岁)</option>
-                                    <option value="elder">老年人 (60岁以上)</option>
-                                </select>
-                            </div>
-                            <div class="context-item">
-                                <label>压力水平:</label>
-                                <select id="regStressLevel" style="
-                                    padding: 12px;
-                                    border: 1px solid #ddd;
-                                    border-radius: 8px;
-                                    font-size: 1rem;
-                                    width: 100%;
-                                ">
-                                    <option value="low">低</option>
-                                    <option value="medium" selected>中</option>
-                                    <option value="high">高</option>
-                                </select>
-                            </div>
-                            <div class="context-item">
-                                <label>是否有社会支持系统:</label>
-                                <select id="regHasSupport" style="
-                                    padding: 12px;
-                                    border: 1px solid #ddd;
-                                    border-radius: 8px;
-                                    font-size: 1rem;
-                                    width: 100%;
-                                ">
-                                    <option value="true" selected>是</option>
-                                    <option value="false">否</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button onclick="handleRegister()" style="
-                            width: 100%;
-                            margin-top: 20px;
-                            padding: 12px 30px;
-                            background: #2ecc71;
-                            color: white;
-                            border: none;
-                            border-radius: 50px;
-                            font-size: 1rem;
-                            cursor: pointer;
-                            transition: all 0.3s;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            gap: 10px;
-                        ">
-                            <i class="fas fa-user-plus"></i> 注册
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- 登录/注册状态显示 -->
-                <div id="authStatus" style="
-                    margin-top: 20px;
-                    padding: 15px;
-                    border-radius: 10px;
-                    display: none;
-                "></div>
-                
-                <!-- 当前用户信息 -->
-                <div id="currentUserInfo" style="
-                    margin-top: 20px;
-                    background: #f8f9fa;
-                    padding: 20px;
-                    border-radius: 12px;
-                    display: none;
-                ">
-                    <h4 style="color: #2c3e50; margin-bottom: 15px;">
-                        <i class="fas fa-user-circle"></i> 当前用户
-                    </h4>
-                    <div id="userInfoContent"></div>
-                    <button onclick="handleLogout()" style="
-                        margin-top: 15px;
-                        padding: 10px 20px;
-                        background: #e74c3c;
-                        color: white;
-                        border: none;
-                        border-radius: 25px;
-                        font-size: 0.9rem;
-                        cursor: pointer;
-                    ">
-                        <i class="fas fa-sign-out-alt"></i> 退出登录
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 主要内容区域（登录后显示） -->
-        <div id="mainContent" style="display: none;">
-            <div class="content-wrapper">
+        <div class="content-wrapper">
             <!-- 左侧：上传区域 -->
             <div class="upload-section">
                 <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
@@ -1181,7 +959,7 @@
                         <i class="fas fa-robot"></i> AI大模型分析
                     </button>
                     <button class="tab-btn" onclick="switchTab('chatTab', event)">
-                        <i class="fas fa-comments"></i> 智能对话
+                        <i class="fas fa-comments"></i> AI对话
                     </button>
                 </div>
 
@@ -1278,155 +1056,132 @@
                             <div class="model-tag" id="modelTag">qwen-plus</div>
                         </div>
 
-                        <div class="llm-analysis-controls">
-                            <button class="upload-btn" onclick="getComprehensiveAnalysis('health_advice')" id="healthAdviceBtn">
-                                <i class="fas fa-heartbeat"></i> 健康建议
+                        <div class="ai-subpages-tabs">
+                            <button class="ai-subpage-btn active" onclick="switchAiSubPage('aiGeneralPage', event)">
+                                <i class="fas fa-wave-square"></i> 综合分析
                             </button>
-                            <button class="upload-btn monitor-btn" onclick="getComprehensiveAnalysis('monitor_analysis')" id="monitorAnalysisBtn">
-                                <i class="fas fa-chart-line"></i> 监测分析
+                            <button class="ai-subpage-btn" onclick="switchAiSubPage('aiMarkdownPage', event)">
+                                <i class="fas fa-file-lines"></i> AI_Markdown报告生成
                             </button>
-                            <button class="upload-btn ai-btn" onclick="getComprehensiveAnalysis('detailed_report')" id="detailedReportBtn">
-                                <i class="fas fa-file-medical-alt"></i> 详细报告
-                            </button>
-                            <div class="days-input">
-                                <label style="display: block; margin-bottom: 5px; color: #7f8c8d; font-size: 0.9rem;">分析天数:</label>
-                                <input type="number" id="llmAnalysisDays" min="1" max="365" value="7">
+                        </div>
+
+                        <div id="aiGeneralPage" class="ai-subpage active">
+                            <div class="llm-analysis-controls">
+                                <button class="upload-btn" onclick="getComprehensiveAnalysis('health_advice')" id="healthAdviceBtn">
+                                    <i class="fas fa-heartbeat"></i> 健康建议
+                                </button>
+                                <button class="upload-btn monitor-btn" onclick="getComprehensiveAnalysis('monitor_analysis')" id="monitorAnalysisBtn">
+                                    <i class="fas fa-chart-line"></i> 监测分析
+                                </button>
+                                <button class="upload-btn ai-btn" onclick="getDetailedReportByMultiAgent()" id="detailedReportBtn">
+                                    <i class="fas fa-file-medical-alt"></i> 详细报告
+                                </button>
+                                <div class="days-input">
+                                    <label style="display: block; margin-bottom: 5px; color: #7f8c8d; font-size: 0.9rem;">分析天数:</label>
+                                    <input type="number" id="llmAnalysisDays" min="1" max="365" value="7">
+                                </div>
                             </div>
+
+                            <div id="aiAnalysisContent" style="text-align: center; color: #7f8c8d; padding: 40px;">
+                                <i class="fas fa-robot fa-3x" style="color: #e0e0e0; margin-bottom: 20px;"></i>
+                                <p>请选择分析类型并点击相应按钮</p>
+                                <p>系统将调用阿里云百炼大模型生成专业分析报告</p>
+                            </div>
+
+                            <div id="llmAnalysisStats" class="analysis-stats" style="display: none;">
+                                <h4><i class="fas fa-chart-bar"></i> 分析统计</h4>
+                                <div class="stats-grid">
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="llmTotalSamples">0</div>
+                                        <div class="stat-label">分析样本</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="llmAnalysisType">未知</div>
+                                        <div class="stat-label">分析类型</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="llmTimeRange">未知</div>
+                                        <div class="stat-label">时间范围</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value" id="llmStability">0%</div>
+                                        <div class="stat-label">情绪稳定性</div>
+                                    </div>
+                                </div>
+                             </div>
                         </div>
 
-                        <div id="aiAnalysisContent" style="text-align: center; color: #7f8c8d; padding: 40px;">
-                            <i class="fas fa-robot fa-3x" style="color: #e0e0e0; margin-bottom: 20px;"></i>
-                            <p>请选择分析类型并点击相应按钮</p>
-                            <p>系统将调用阿里云百炼大模型生成专业分析报告</p>
-                        </div>
+                        <div id="aiMarkdownPage" class="ai-subpage">
+                            <div class="llm-analysis-controls">
+                                <button class="upload-btn ai-btn" id="markdownGenerateBtn" onclick="generateMarkdownReport()">
+                                    <i class="fas fa-file-pen"></i> 生成 Markdown 报告
+                                </button>
+                                <button class="upload-btn monitor-btn" id="markdownCopyBtn" onclick="copyMarkdownReport()" disabled>
+                                    <i class="fas fa-copy"></i> 复制 Markdown
+                                </button>
+                                <div class="days-input">
+                                    <label style="display: block; margin-bottom: 5px; color: #7f8c8d; font-size: 0.9rem;">分析天数:</label>
+                                    <input type="number" id="markdownDays" min="1" max="365" value="7">
+                                </div>
+                            </div>
 
-                        <div id="llmAnalysisStats" class="analysis-stats" style="display: none;">
-                            <h4><i class="fas fa-chart-bar"></i> 分析统计</h4>
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <div class="stat-value" id="llmTotalSamples">0</div>
-                                    <div class="stat-label">分析样本</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-value" id="llmAnalysisType">未知</div>
-                                    <div class="stat-label">分析类型</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-value" id="llmTimeRange">未知</div>
-                                    <div class="stat-label">时间范围</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-value" id="llmStability">0%</div>
-                                    <div class="stat-label">情绪稳定性</div>
-                                </div>
+                            <div id="markdownReportContent" style="text-align: center; color: #7f8c8d; padding: 40px;">
+                                <i class="fas fa-file-lines fa-3x" style="color: #e0e0e0; margin-bottom: 20px;"></i>
+                                <p>点击“生成 Markdown 报告”调用 multiAgent 流程</p>
+                                <p>该页面将显示可读版报告，并可复制原始 Markdown</p>
+                            </div>
+
+                            <div id="markdownReportMeta" class="markdown-meta" style="display: none;">
+                                <span id="markdownSampleCount">样本: 0</span>
+                                <span style="margin: 0 10px;">|</span>
+                                <span id="markdownOutputFile">文件: -</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 智能对话标签页 -->
+                <!-- AI对话标签页 -->
                 <div id="chatTab" class="tab-content">
                     <div class="advice-section">
                         <h3 style="color: #2c3e50; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-comments"></i> 智能对话 (LangGraph)
+                            <i class="fas fa-comments"></i> AI智能对话
                         </h3>
                         
-                        <div style="display: flex; gap: 20px;">
-                            <!-- 会话列表侧边栏 -->
-                            <div style="width: 280px; flex-shrink: 0;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                    <h4 style="color: #2c3e50; margin: 0;">
-                                        <i class="fas fa-folder-open"></i> 对话列表
-                                    </h4>
-                                    <button onclick="createNewSession()" style="
-                                        padding: 6px 12px;
-                                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                        color: white;
-                                        border: none;
-                                        border-radius: 6px;
-                                        cursor: pointer;
-                                        font-size: 0.85rem;
-                                    ">
-                                        <i class="fas fa-plus"></i> 新建
-                                    </button>
-                                </div>
-                                <div id="sessionList" style="
-                                    background: #f8f9fa;
-                                    border-radius: 12px;
-                                    padding: 10px;
-                                    max-height: 450px;
-                                    overflow-y: auto;
-                                ">
-                                    <div style="text-align: center; color: #7f8c8d; padding: 20px;">
-                                        <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                                        <p style="font-size: 0.9rem;">暂无对话</p>
-                                        <p style="font-size: 0.8rem;">点击"新建"开始对话</p>
-                                    </div>
-                                </div>
+                        <!-- 会话管理 -->
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <select id="chatSessionSelect" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                                    <option value="">选择会话...</option>
+                                </select>
+                                <button class="upload-btn" onclick="createNewSession()" style="padding: 10px 20px;">
+                                    <i class="fas fa-plus"></i> 新建会话
+                                </button>
                             </div>
-                            
-                            <!-- 聊天区域 -->
-                            <div style="flex: 1;">
-                                <div class="chat-container" id="chatContainer" style="
-                                    background: #f8f9fa;
-                                    border-radius: 12px;
-                                    padding: 20px;
-                                    height: 400px;
-                                    overflow-y: auto;
-                                    margin-bottom: 20px;
-                                ">
-                                    <div style="text-align: center; color: #7f8c8d; padding: 40px;">
-                                        <i class="fas fa-robot fa-3x" style="color: #e0e0e0; margin-bottom: 20px;"></i>
-                                        <p>选择或创建对话开始聊天</p>
-                                        <p style="font-size: 0.9rem;">首次对话时会分析您的性格和近期情绪</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="chat-input-container" style="display: flex; gap: 10px;">
-                                    <input type="text" id="chatInput" placeholder="输入您的消息..." style="
-                                        flex: 1;
-                                        padding: 12px 16px;
-                                        border: 2px solid #e0e0e0;
-                                        border-radius: 25px;
-                                        font-size: 1rem;
-                                        outline: none;
-                                        transition: all 0.3s;
-                                    " onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                                    <button onclick="sendChatMessage()" id="sendChatBtn" style="
-                                        padding: 12px 24px;
-                                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                        color: white;
-                                        border: none;
-                                        border-radius: 25px;
-                                        font-size: 1rem;
-                                        cursor: pointer;
-                                        transition: all 0.3s;
-                                    ">
-                                        <i class="fas fa-paper-plane"></i> 发送
-                                    </button>
-                                </div>
-                                
-                                <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center; justify-content: flex-end;">
-                                    <button onclick="deleteCurrentSession()" id="deleteSessionBtn" style="
-                                        padding: 8px 16px;
-                                        background: #e74c3c;
-                                        color: white;
-                                        border: none;
-                                        border-radius: 8px;
-                                        cursor: pointer;
-                                        display: none;
-                                    ">
-                                        <i class="fas fa-trash"></i> 删除对话
-                                    </button>
-                                </div>
-                                
-                                <div id="chatStatus" style="
-                                    margin-top: 10px;
-                                    padding: 10px;
-                                    border-radius: 8px;
-                                    display: none;
-                                "></div>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="newSessionTitle" placeholder="会话标题" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                                <button class="upload-btn" onclick="renameSession()" style="padding: 10px 20px;">
+                                    <i class="fas fa-edit"></i> 重命名
+                                </button>
+                                <button class="upload-btn monitor-btn" onclick="deleteSession()" style="padding: 10px 20px;">
+                                    <i class="fas fa-trash"></i> 删除
+                                </button>
                             </div>
+                        </div>
+
+                        <!-- 对话区域 -->
+                        <div id="chatMessages" style="height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 15px; background: #fafafa;">
+                            <div style="text-align: center; color: #7f8c8d; padding: 50px;">
+                                <i class="fas fa-comments fa-3x" style="margin-bottom: 15px;"></i>
+                                <p>选择或创建一个会话开始对话</p>
+                            </div>
+                        </div>
+
+                        <!-- 输入区域 -->
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="chatInput" placeholder="输入您的消息..." style="flex: 1; padding: 12px; border: 2px solid #3498db; border-radius: 25px; font-size: 1rem;">
+                            <button class="upload-btn ai-btn" onclick="sendChatMessage()" style="padding: 12px 30px; border-radius: 25px;">
+                                <i class="fas fa-paper-plane"></i> 发送
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1441,7 +1196,6 @@
                 最后更新: <span id="lastUpdate">--</span>
             </p>
         </div>
-        </div> <!-- 关闭 mainContent -->
     </div>
 
     <!-- 状态提示栏 -->
@@ -1514,9 +1268,6 @@
 
             // 每10秒更新一次监测状态
             setInterval(checkMonitorStatus, 10000);
-
-            // 初始化用户认证
-            initializeAuth();
         });
 
         function checkRequiredElements() {
@@ -1526,6 +1277,8 @@
                 'monitorAnalysisBtn',
                 'detailedReportBtn',
                 'llmAnalysisDays',
+                'markdownGenerateBtn',
+                'markdownReportContent',
                 'llmTotalSamples',
                 'llmAnalysisType',
                 'llmTimeRange',
@@ -1661,7 +1414,7 @@
         }
 
         // 切换标签页
-        async function switchTab(tabId, eventObj) {
+        function switchTab(tabId, eventObj) {
             // 移除所有标签页的active类
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -1691,11 +1444,6 @@
             }
             
             document.getElementById(tabId).classList.add('active');
-            
-            // 如果切换到智能对话标签页，加载会话列表
-            if (tabId === 'chatTab' && currentUser) {
-                await loadSessions();
-            }
         }
 
         // 显示状态消息
@@ -1714,10 +1462,6 @@
 
         // 分析单张图片（模型分析）
         async function analyzeSingleImage() {
-            if (!checkLogin()) {
-                return;
-            }
-            
             if (!currentImageData) {
                 showStatus('请先上传图像', 'error');
                 return;
@@ -1742,8 +1486,6 @@
                 // 创建FormData
                 const formData = new FormData();
                 formData.append('image', blob, 'uploaded_image.jpg');
-                const userId = currentUser ? currentUser.id : 1;
-                formData.append('user_id', userId);
 
                 showStatus('正在分析单张图像情绪...', 'success');
 
@@ -1812,10 +1554,6 @@
 
         // 使用AI深度分析单张图片
         async function analyzeWithAI() {
-            if (!checkLogin()) {
-                return;
-            }
-            
             if (!currentImageData) {
                 showStatus('请先上传图像', 'error');
                 return;
@@ -1833,10 +1571,6 @@
 
                 const formData = new FormData();
                 formData.append('image', blob, 'uploaded_image.jpg');
-
-                // 添加用户ID
-                const userId = currentUser ? currentUser.id : 1;
-                formData.append('user_id', userId);
 
                 // 获取用户上下文
                 const userContext = {
@@ -1889,10 +1623,6 @@
 
         // 综合情绪分析与建议（调用大模型）
         async function analyzeComprehensiveWithLLM() {
-            if (!checkLogin()) {
-                return;
-            }
-            
             const confirmAction = confirm('即将进行综合情绪分析。\n\n这将分析所有历史数据并生成综合报告。\n是否继续？');
             if (!confirmAction) return;
 
@@ -1987,12 +1717,18 @@
             try {
                 showStatus(`正在生成${getAnalysisTypeName(analysisType)}...`, 'success');
 
+                const isMultiAgentReport = analysisType === 'detailed_report';
+                const endpoint = isMultiAgentReport ? '/multi_agent_analysis' : '/comprehensive_analysis';
+
                 // 构建请求体
-                const requestBody = {
+                const requestBody = isMultiAgentReport ? {
+                    days: days,
+                    user_context: userContext
+                } : {
                     use_history: true,
                     analysis_type: analysisType,
                     days: days,
-                    user_context: userContext  // 包含用户上下文
+                    user_context: userContext
                 };
 
                 console.log("发送综合分析请求:", {
@@ -2001,7 +1737,7 @@
                     userContext: userContext
                 });
 
-                const response = await fetch(`${API_BASE_URL}/comprehensive_analysis`, {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -2129,15 +1865,71 @@
                 return;
             }
 
-            const data = result.data || {};
-            const llmResponse = data.llm_response || {};
-            const algorithmAnalysis = data.algorithm_analysis || {};
-            const summary = data.summary || {};
-            const usingAlgorithm = data.using_algorithm || false;
+            const isMultiAgentResult = analysisType === 'detailed_report' && typeof result.report_markdown === 'string';
+            if (isMultiAgentResult) {
+                const rendered = renderSimpleMarkdown(result.report_markdown);
+
+                if (llmTotalSamples) {
+                    llmTotalSamples.textContent = result.total_samples || 0;
+                }
+                if (llmAnalysisType) {
+                    llmAnalysisType.textContent = '多智能体详细报告';
+                }
+                if (llmTimeRange) {
+                    llmTimeRange.textContent = '按所选天数生成';
+                }
+                if (llmStability) {
+                    llmStability.textContent = '--';
+                }
+                if (llmAnalysisStats) {
+                    llmAnalysisStats.style.display = 'block';
+                }
+                if (modelTag) {
+                    modelTag.style.background = '#16a085';
+                    modelTag.innerHTML = '<i class="fas fa-users"></i> multiAgent';
+                }
+
+                aiAnalysisContent.innerHTML = `
+                    <div style="background: #e8f9f4; padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 2px solid #16a085;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h4 style="margin: 0; color: #1f3a56; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-users"></i> 详细报告 - 多智能体生成
+                            </h4>
+                            <span style="background: #16a085; color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.9em;">multiAgent</span>
+                        </div>
+                        <div class="llm-response-box">${rendered}</div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (analysisType === 'detailed_report') {
+                if (modelTag) {
+                    modelTag.style.background = '#e67e22';
+                    modelTag.innerHTML = '<i class="fas fa-triangle-exclamation"></i> 路由异常';
+                }
+                if (llmAnalysisStats) {
+                    llmAnalysisStats.style.display = 'none';
+                }
+                aiAnalysisContent.innerHTML = `
+                    <div style="background: #fff3cd; padding: 20px; border-radius: 12px; border: 1px solid #ffe08a; color: #7a5b00;">
+                        <h4 style="margin: 0 0 10px;"><i class="fas fa-info-circle"></i> 详细报告应由多智能体生成</h4>
+                        <p style="margin: 0 0 8px;">当前返回数据不是 multiAgent 的 Markdown 结构（缺少 report_markdown）。</p>
+                        <p style="margin: 0;">请强制刷新页面（Ctrl+F5）后重试；若仍异常，请检查浏览器缓存和前端是否加载最新文件。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 处理 API 实际返回的数据结构
+            const analysis = result.analysis || {};
+            const llmAdvice = result.llm_advice;
+            const totalSamples = result.total_samples || 0;
+            const isAlgorithmBased = !llmAdvice;
 
             // 更新统计信息（如果元素存在）
             if (llmTotalSamples) {
-                llmTotalSamples.textContent = summary.total_samples || 0;
+                llmTotalSamples.textContent = totalSamples;
             }
 
             if (llmAnalysisType) {
@@ -2145,14 +1937,14 @@
             }
 
             if (llmTimeRange) {
-                const timeRange = summary.time_range || {};
+                const timeRange = analysis.time_range || {};
                 const startTime = timeRange.start ? timeRange.start.substring(0, 10) : '未知';
                 const endTime = timeRange.end ? timeRange.end.substring(0, 10) : '未知';
                 llmTimeRange.textContent = `${startTime} 至 ${endTime}`;
             }
 
             if (llmStability) {
-                llmStability.textContent = `${summary.stability_score?.toFixed(1) || '0'}%`;
+                llmStability.textContent = `${analysis.stability_score?.toFixed(1) || '0'}%`;
             }
 
             if (llmAnalysisStats) {
@@ -2160,10 +1952,12 @@
             }
 
             if (modelTag) {
-                modelTag.textContent = llmResponse.model || '算法生成';
-                if (usingAlgorithm) {
+                if (isAlgorithmBased) {
                     modelTag.style.background = '#ff6b6b';
                     modelTag.innerHTML = '<i class="fas fa-calculator"></i> 算法生成';
+                } else {
+                    modelTag.style.background = '#3498db';
+                    modelTag.textContent = 'qwen-plus';
                 }
             }
 
@@ -2171,35 +1965,57 @@
 
             // 获取分析内容
             let displayContent = '';
-            let isAlgorithmBased = usingAlgorithm;
 
-            if (llmResponse.success && llmResponse.raw_response) {
+            if (llmAdvice) {
                 // 大模型响应
-                displayContent = llmResponse.raw_response;
-                isAlgorithmBased = false;
-            } else if (algorithmAnalysis && Object.keys(algorithmAnalysis).length > 0) {
-                // 算法生成的分析
-                displayContent = formatAlgorithmAnalysis(algorithmAnalysis, analysisType);
-                isAlgorithmBased = true;
-            } else if (llmResponse.fallback) {
-                // 备用算法分析
-                displayContent = formatAlgorithmAnalysis(llmResponse.fallback, analysisType);
-                isAlgorithmBased = true;
+                displayContent = renderSimpleMarkdown(typeof llmAdvice === 'string' ? llmAdvice : JSON.stringify(llmAdvice));
             } else {
-                displayContent = '分析结果不可用，请检查数据或稍后重试。';
-            }
-
-            // 添加使用情况统计
-            let usageInfo = '';
-            if (llmResponse.usage && !isAlgorithmBased) {
-                usageInfo = `
-                    <div class="usage-stats">
-                        <i class="fas fa-chart-bar"></i> 使用统计:
-                        总Token: ${llmResponse.usage.total_tokens || 0} |
-                        提示Token: ${llmResponse.usage.prompt_tokens || 0} |
-                        生成Token: ${llmResponse.usage.completion_tokens || 0}
-                    </div>
-                `;
+                // 算法生成的分析 - 根据分析类型构建内容
+                if (analysisType === 'health_advice') {
+                    displayContent = `
+                        <h5>健康建议报告</h5>
+                        <p><strong>主要情绪:</strong> ${analysis.dominant_emotion?.emotion_zh || '未知'} (占比 ${(analysis.dominant_emotion?.percentage || 0).toFixed(1)}%)</p>
+                        <p><strong>情绪稳定性:</strong> ${(analysis.stability_score || 0).toFixed(1)}%</p>
+                        <p><strong>样本总数:</strong> ${totalSamples}</p>
+                        
+                        <h6 style="margin-top: 15px; color: #e74c3c;">健康洞察:</h6>
+                        <ul>
+                            ${(analysis.health_insights || []).map(insight => `<li>${insight}</li>`).join('')}
+                        </ul>
+                        
+                        <h6 style="margin-top: 15px; color: #2ecc71;">建议:</h6>
+                        <ul>
+                            <li>保持规律作息，确保充足睡眠</li>
+                            <li>适当进行体育锻炼，释放压力</li>
+                            <li>与家人朋友保持沟通，寻求支持</li>
+                            <li>注意观察情绪变化，必要时寻求专业帮助</li>
+                        </ul>
+                    `;
+                } else if (analysisType === 'monitor_analysis') {
+                    displayContent = `
+                        <h5>监测分析报告</h5>
+                        <p><strong>主要情绪:</strong> ${analysis.dominant_emotion?.emotion_zh || '未知'} (占比 ${(analysis.dominant_emotion?.percentage || 0).toFixed(1)}%)</p>
+                        <p><strong>平均置信度:</strong> ${(analysis.average_confidence || 0) * 100}%</p>
+                        <p><strong>样本总数:</strong> ${totalSamples}</p>
+                        <p><strong>时间范围:</strong> ${analysis.time_range?.start?.substring(0, 10) || '未知'} 至 ${analysis.time_range?.end?.substring(0, 10) || '未知'}</p>
+                        
+                        <h6 style="margin-top: 15px;">情绪趋势:</h6>
+                        <ul>
+                            ${(analysis.emotion_trend?.timeseries || []).slice(-5).map(item => 
+                                `<li>${item.time.substring(0, 16)} - ${emotionChinese[item.emotion] || item.emotion} (置信度: ${(item.confidence * 100).toFixed(1)}%)</li>`
+                            ).join('')}
+                        </ul>
+                        
+                        <h6 style="margin-top: 15px;">建议:</h6>
+                        <ul>
+                            <li>继续保持监测，了解情绪变化规律</li>
+                            <li>在情绪波动较大时，尝试放松技巧</li>
+                            <li>记录情绪触发因素，便于后续分析</li>
+                        </ul>
+                    `;
+                } else {
+                    displayContent = '分析结果已生成，请查看下方数据概览。';
+                }
             }
 
             // 添加算法生成提示
@@ -2220,12 +2036,11 @@
                             <i class="fas fa-robot"></i> ${getAnalysisTypeName(analysisType)} - ${isAlgorithmBased ? '算法分析' : 'AI大模型分析'}
                         </h4>
                         <span style="background: ${isAlgorithmBased ? '#ff6b6b' : '#3498db'}; color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.9em;">
-                            ${isAlgorithmBased ? '<i class="fas fa-calculator"></i> 算法生成' : (llmResponse.model || 'qwen-plus')}
+                            ${isAlgorithmBased ? '<i class="fas fa-calculator"></i> 算法生成' : 'qwen-plus'}
                         </span>
                     </div>
 
                     ${algorithmNote}
-                    ${usageInfo}
 
                     <div class="llm-response-box">
                         ${displayContent}
@@ -2235,7 +2050,7 @@
                 <div style="background: #f8f9fa; padding: 20px; border-radius: 12px;">
                     <h4><i class="fas fa-chart-pie"></i> 情绪数据概览</h4>
                     <div style="margin-top: 15px;">
-                        ${generateEmotionDistributionHTML(summary.emotion_distribution || {}, summary.total_samples || 1)}
+                        ${generateEmotionDistributionHTML(analysis.emotion_distribution || {}, totalSamples || 1)}
                     </div>
                 </div>
             `;
@@ -2415,12 +2230,18 @@ async function getComprehensiveAnalysis(analysisType) {
     try {
         showStatus(`正在生成${getAnalysisTypeName(analysisType)}...`, 'success');
 
+        const isMultiAgentReport = analysisType === 'detailed_report';
+        const endpoint = isMultiAgentReport ? '/multi_agent_analysis' : '/comprehensive_analysis';
+
         // 构建请求体
-        const requestBody = {
+        const requestBody = isMultiAgentReport ? {
+            days: days,
+            user_context: userContext
+        } : {
             use_history: true,
             analysis_type: analysisType,
             days: days,
-            user_context: userContext  // 包含用户上下文
+            user_context: userContext
         };
 
         console.log("发送综合分析请求:", {
@@ -2429,7 +2250,7 @@ async function getComprehensiveAnalysis(analysisType) {
             userContext: userContext
         });
 
-        const response = await fetch(`${API_BASE_URL}/comprehensive_analysis`, {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2545,6 +2366,249 @@ function getAnalysisTypeName(type) {
         'detailed_report': '详细报告'
     };
     return names[type] || type;
+}
+
+async function getDetailedReportByMultiAgent() {
+    const days = parseInt(document.getElementById('llmAnalysisDays').value, 10) || 7;
+
+    const userContext = {
+        age_group: document.getElementById('ageGroup').value,
+        stress_level: document.getElementById('stressLevel').value,
+        has_support_system: document.getElementById('hasSupport').value === 'true',
+        is_first_time: document.getElementById('isFirstTime').value === 'true'
+    };
+
+    const healthAdviceBtn = document.getElementById('healthAdviceBtn');
+    const monitorAnalysisBtn = document.getElementById('monitorAnalysisBtn');
+    const detailedReportBtn = document.getElementById('detailedReportBtn');
+
+    if (!healthAdviceBtn || !monitorAnalysisBtn || !detailedReportBtn) {
+        showStatus('分析按钮未找到，请刷新页面', 'error');
+        return;
+    }
+
+    const originalTexts = {
+        healthAdviceBtn: healthAdviceBtn.innerHTML,
+        monitorAnalysisBtn: monitorAnalysisBtn.innerHTML,
+        detailedReportBtn: detailedReportBtn.innerHTML
+    };
+
+    healthAdviceBtn.disabled = true;
+    monitorAnalysisBtn.disabled = true;
+    detailedReportBtn.disabled = true;
+    detailedReportBtn.innerHTML = '<div class="loading"></div> 多智能体生成中...';
+
+    try {
+        showStatus('正在使用多智能体生成详细报告...', 'success');
+
+        const response = await fetch(`${API_BASE_URL}/multi_agent_analysis`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                days: days,
+                user_context: userContext
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`服务器错误: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || '多智能体报告生成失败');
+        }
+
+        displayLLMAnalysis(result, 'detailed_report');
+        showStatus('多智能体详细报告生成完成！', 'success');
+    } catch (error) {
+        console.error('多智能体详细报告失败:', error);
+        showStatus(`多智能体详细报告失败: ${error.message}`, 'error');
+
+        const aiAnalysisContent = document.getElementById('aiAnalysisContent');
+        if (aiAnalysisContent) {
+            aiAnalysisContent.innerHTML = `
+                <div style="text-align: center; padding: 40px; background: #f8d7da; border-radius: 12px; border: 2px solid #f5c6cb;">
+                    <i class="fas fa-exclamation-triangle fa-3x" style="color: #721c24; margin-bottom: 20px;"></i>
+                    <h3 style="color: #721c24;">多智能体报告生成失败</h3>
+                    <p style="color: #721c24;">${escapeHtml(error.message || '未知错误')}</p>
+                    <div style="margin-top: 14px; color: #7f8c8d;">请检查后端日志和 DEEPSEEK_API_KEY 配置。</div>
+                </div>
+            `;
+        }
+    } finally {
+        healthAdviceBtn.innerHTML = originalTexts.healthAdviceBtn;
+        healthAdviceBtn.disabled = false;
+        monitorAnalysisBtn.innerHTML = originalTexts.monitorAnalysisBtn;
+        monitorAnalysisBtn.disabled = false;
+        detailedReportBtn.innerHTML = originalTexts.detailedReportBtn;
+        detailedReportBtn.disabled = false;
+    }
+}
+
+let latestMarkdownReport = '';
+
+function switchAiSubPage(pageId, eventObj) {
+    document.querySelectorAll('.ai-subpage-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.ai-subpage').forEach(page => page.classList.remove('active'));
+
+    if (eventObj && eventObj.currentTarget) {
+        eventObj.currentTarget.classList.add('active');
+    }
+
+    const pageEl = document.getElementById(pageId);
+    if (pageEl) {
+        pageEl.classList.add('active');
+    }
+}
+
+function escapeHtml(text) {
+    return (text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function renderSimpleMarkdown(md) {
+    let html = escapeHtml(md || '');
+
+    html = html
+        .replace(/^###\s+(.*)$/gm, '<h3>$1</h3>')
+        .replace(/^##\s+(.*)$/gm, '<h2>$1</h2>')
+        .replace(/^#\s+(.*)$/gm, '<h1>$1</h1>')
+        .replace(/^>\s+(.*)$/gm, '<blockquote>$1</blockquote>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    const lines = html.split('\n');
+    let inList = false;
+    const out = [];
+
+    for (const line of lines) {
+        if (/^\s*[-*]\s+/.test(line)) {
+            if (!inList) {
+                out.push('<ul>');
+                inList = true;
+            }
+            out.push(`<li>${line.replace(/^\s*[-*]\s+/, '')}</li>`);
+        } else {
+            if (inList) {
+                out.push('</ul>');
+                inList = false;
+            }
+            if (line.trim()) {
+                if (/^<h[1-3]>|^<blockquote>|^<ul>|^<\/ul>|^<li>|^<code>/.test(line.trim())) {
+                    out.push(line);
+                } else {
+                    out.push(`<p>${line}</p>`);
+                }
+            }
+        }
+    }
+    if (inList) {
+        out.push('</ul>');
+    }
+
+    return out.join('');
+}
+
+function copyMarkdownReport() {
+    if (!latestMarkdownReport) {
+        showStatus('当前没有可复制的 Markdown 报告', 'error');
+        return;
+    }
+
+    navigator.clipboard.writeText(latestMarkdownReport)
+        .then(() => showStatus('Markdown 报告已复制到剪贴板', 'success'))
+        .catch(() => showStatus('复制失败，请手动复制', 'error'));
+}
+
+async function generateMarkdownReport() {
+    const generateBtn = document.getElementById('markdownGenerateBtn');
+    const copyBtn = document.getElementById('markdownCopyBtn');
+    const contentEl = document.getElementById('markdownReportContent');
+    const metaEl = document.getElementById('markdownReportMeta');
+    const sampleEl = document.getElementById('markdownSampleCount');
+    const fileEl = document.getElementById('markdownOutputFile');
+    const days = parseInt(document.getElementById('markdownDays').value, 10) || 7;
+
+    const userContext = {
+        age_group: document.getElementById('ageGroup').value,
+        stress_level: document.getElementById('stressLevel').value,
+        has_support_system: document.getElementById('hasSupport').value === 'true',
+        is_first_time: document.getElementById('isFirstTime').value === 'true'
+    };
+
+    if (!generateBtn || !contentEl) {
+        showStatus('Markdown 页面元素不存在，请刷新页面', 'error');
+        return;
+    }
+
+    const originalText = generateBtn.innerHTML;
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<div class="loading"></div> 生成中...';
+    if (copyBtn) copyBtn.disabled = true;
+
+    contentEl.innerHTML = `
+        <div style="text-align: center; padding: 30px; color: #5f6f82;">
+            <i class="fas fa-robot fa-spin fa-2x" style="margin-bottom: 14px;"></i>
+            <p>正在调用 multiAgent 生成 Markdown 报告...</p>
+        </div>
+    `;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/multi_agent_analysis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                days: days,
+                user_context: userContext
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`服务器错误: ${response.status} - ${errText}`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || 'Markdown 报告生成失败');
+        }
+
+        latestMarkdownReport = result.report_markdown || '';
+        const rendered = renderSimpleMarkdown(latestMarkdownReport);
+
+        contentEl.innerHTML = `
+            <div class="markdown-report-box">${rendered}</div>
+        `;
+
+        if (sampleEl) sampleEl.textContent = `样本: ${result.total_samples || 0}`;
+        if (fileEl) fileEl.textContent = `文件: ${result.output_file || '-'}`;
+        if (metaEl) metaEl.style.display = 'block';
+        if (copyBtn) copyBtn.disabled = !latestMarkdownReport;
+
+        showStatus('AI_Markdown 报告生成完成', 'success');
+    } catch (error) {
+        console.error('生成 Markdown 报告失败:', error);
+        const msg = error.message || '未知错误';
+        contentEl.innerHTML = `
+            <div style="background: #fff0f0; border: 1px solid #f6c9c9; border-radius: 10px; padding: 16px; color: #8d2f2f;">
+                <h4 style="margin: 0 0 8px;">AI_Markdown 报告生成失败</h4>
+                <p style="margin: 0;">${escapeHtml(msg)}</p>
+            </div>
+        `;
+        showStatus(`AI_Markdown 报告生成失败: ${msg}`, 'error');
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = originalText;
+    }
 }
 
         function generateEmotionDistributionHTML(distribution, total) {
@@ -2783,13 +2847,8 @@ function getAnalysisTypeName(type) {
 
         // 开始监测
         async function startMonitoring() {
-            if (!checkLogin()) {
-                return;
-            }
-            
             const captureInterval = parseInt(document.getElementById('captureInterval').value) || 5;
             const cameraIndex = parseInt(document.getElementById('cameraIndex').value) || 0;
-            const userId = currentUser ? currentUser.id : 1;
 
             if (captureInterval < 1) {
                 showStatus('抓拍间隔必须至少1秒', 'error');
@@ -2807,8 +2866,7 @@ function getAnalysisTypeName(type) {
                     },
                     body: JSON.stringify({
                         camera_index: cameraIndex,
-                        capture_interval: captureInterval,
-                        user_id: userId
+                        capture_interval: captureInterval
                     })
                 });
 
@@ -2851,10 +2909,6 @@ function getAnalysisTypeName(type) {
 
         // 分析监测历史
         async function analyzeMonitoringHistory() {
-            if (!checkLogin()) {
-                return;
-            }
-            
             const analyzeBtn = event.target;
             const originalText = analyzeBtn.innerHTML;
             analyzeBtn.innerHTML = '<div class="loading"></div> 分析中...';
@@ -2977,661 +3031,255 @@ function getAnalysisTypeName(type) {
             return fetchPromise;
         };
 
-        // ============================================================
-        // LangGraph 智能对话功能
-        // ============================================================
-        
-        // 对话历史
-        let chatHistory = [];
-        // 当前会话ID
+        // ================ AI对话功能 ================
+        let currentUserId = 1;
         let currentSessionId = null;
-        // 会话列表
-        let sessions = [];
+        let chatMessages = [];
 
         // 加载会话列表
         async function loadSessions() {
-            if (!checkLogin()) {
-                return;
-            }
-            
-            const userId = currentUser ? currentUser.id : 1;
-            const sessionList = document.getElementById('sessionList');
-            
             try {
-                const response = await fetch(`${API_BASE_URL}/conversation/sessions?user_id=${userId}`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    sessions = result.sessions;
-                    renderSessionList();
-                } else {
-                    console.error('加载会话失败:', result.error);
+                const response = await fetch(`${API_BASE_URL}/conversation/sessions?user_id=${currentUserId}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    const select = document.getElementById('chatSessionSelect');
+                    select.innerHTML = '<option value="">选择会话...</option>';
+                    
+                    if (result.success && result.sessions) {
+                        result.sessions.forEach(session => {
+                            const option = document.createElement('option');
+                            option.value = session.id;
+                            option.textContent = session.title || '未命名会话';
+                            select.appendChild(option);
+                        });
+                    }
                 }
             } catch (error) {
-                console.error('加载会话错误:', error);
+                console.error('加载会话失败:', error);
             }
-        }
-
-        // 渲染会话列表
-        function renderSessionList() {
-            const sessionList = document.getElementById('sessionList');
-            
-            if (sessions.length === 0) {
-                sessionList.innerHTML = `
-                    <div style="text-align: center; color: #7f8c8d; padding: 20px;">
-                        <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                        <p style="font-size: 0.9rem;">暂无对话</p>
-                        <p style="font-size: 0.8rem;">点击"新建"开始对话</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            sessionList.innerHTML = sessions.map(session => `
-                <div onclick="selectSession('${session.id}')" style="
-                    padding: 12px;
-                    margin-bottom: 8px;
-                    background: ${session.id === currentSessionId ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white'};
-                    color: ${session.id === currentSessionId ? 'white' : '#2c3e50'};
-                    border-radius: 8px;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                " onmouseover="this.style.transform='translateX(3px)'" 
-                   onmouseout="this.style.transform='translateX(0)'">
-                    <div style="font-weight: 600; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        ${session.title}
-                    </div>
-                    <div style="font-size: 0.8rem; opacity: 0.8;">
-                        ${new Date(session.last_message_at).toLocaleString('zh-CN')}
-                    </div>
-                </div>
-            `).join('');
         }
 
         // 创建新会话
         async function createNewSession() {
-            if (!checkLogin()) {
-                return;
-            }
-            
-            const userId = currentUser ? currentUser.id : 1;
-            const title = prompt('请输入对话标题:', '新对话');
-            
-            if (!title) return;
-            
+            const title = document.getElementById('newSessionTitle').value || '新对话';
             try {
                 const response = await fetch(`${API_BASE_URL}/conversation/sessions`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: userId,
+                        user_id: currentUserId,
                         title: title
                     })
                 });
                 
-                const result = await response.json();
-                
-                if (result.success) {
-                    await loadSessions();
-                    selectSession(result.session.id);
-                    showStatus('对话创建成功', 'success');
-                } else {
-                    showStatus('创建对话失败: ' + result.error, 'error');
-                }
-            } catch (error) {
-                console.error('创建会话错误:', error);
-                showStatus('创建对话失败: ' + error.message, 'error');
-            }
-        }
-
-        // 选择会话
-        async function selectSession(sessionId) {
-            if (!checkLogin()) {
-                return;
-            }
-            
-            currentSessionId = sessionId;
-            renderSessionList();
-            
-            // 显示删除按钮
-            document.getElementById('deleteSessionBtn').style.display = 'block';
-            
-            // 加载会话历史
-            await loadSessionHistory(sessionId);
-        }
-
-        // 加载会话历史
-        async function loadSessionHistory(sessionId) {
-            if (!checkLogin()) {
-                return;
-            }
-            
-            const userId = currentUser ? currentUser.id : 1;
-            const chatContainer = document.getElementById('chatContainer');
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/conversation/sessions/${sessionId}/history?user_id=${userId}`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    chatHistory = [];
-                    chatContainer.innerHTML = '';
-                    
-                    result.history.forEach(msg => {
-                        addChatMessage(msg.role, msg.content, false);
-                    });
-                    
-                    if (result.history.length === 0) {
-                        chatContainer.innerHTML = `
-                            <div style="text-align: center; color: #7f8c8d; padding: 40px;">
-                                <i class="fas fa-robot fa-3x" style="color: #e0e0e0; margin-bottom: 20px;"></i>
-                                <p>开始与智能助手对话</p>
-                                <p style="font-size: 0.9rem;">首次对话时会分析您的性格和近期情绪</p>
-                            </div>
-                        `;
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        currentSessionId = result.session.id;
+                        document.getElementById('newSessionTitle').value = '';
+                        await loadSessions();
+                        document.getElementById('chatSessionSelect').value = currentSessionId;
+                        await loadChatHistory();
+                        showStatus('会话创建成功', 'success');
                     }
-                } else {
-                    console.error('加载会话历史失败:', result.error);
                 }
             } catch (error) {
-                console.error('加载会话历史错误:', error);
+                console.error('创建会话失败:', error);
+                showStatus('创建会话失败', 'error');
             }
         }
 
-        // 删除当前会话
-        async function deleteCurrentSession() {
-            if (!checkLogin() || !currentSessionId) {
+        // 重命名会话
+        async function renameSession() {
+            if (!currentSessionId) {
+                showStatus('请先选择会话', 'error');
                 return;
             }
             
-            if (!confirm('确定要删除这个对话吗？此操作不可恢复！')) {
+            const title = document.getElementById('newSessionTitle').value;
+            if (!title) {
+                showStatus('请输入新标题', 'error');
                 return;
             }
-            
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/conversation/sessions/${currentSessionId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title })
+                });
+                
+                if (response.ok) {
+                    await loadSessions();
+                    document.getElementById('chatSessionSelect').value = currentSessionId;
+                    document.getElementById('newSessionTitle').value = '';
+                    showStatus('会话重命名成功', 'success');
+                }
+            } catch (error) {
+                console.error('重命名会话失败:', error);
+                showStatus('重命名会话失败', 'error');
+            }
+        }
+
+        // 删除会话
+        async function deleteSession() {
+            if (!currentSessionId) {
+                showStatus('请先选择会话', 'error');
+                return;
+            }
+
+            if (!confirm('确定要删除这个会话吗？')) {
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_BASE_URL}/conversation/sessions/${currentSessionId}`, {
                     method: 'DELETE'
                 });
                 
-                const result = await response.json();
-                
-                if (result.success) {
+                if (response.ok) {
                     currentSessionId = null;
-                    document.getElementById('deleteSessionBtn').style.display = 'none';
-                    
-                    // 清空聊天区域
-                    const chatContainer = document.getElementById('chatContainer');
-                    chatContainer.innerHTML = `
-                        <div style="text-align: center; color: #7f8c8d; padding: 40px;">
-                            <i class="fas fa-robot fa-3x" style="color: #e0e0e0; margin-bottom: 20px;"></i>
-                            <p>选择或创建对话开始聊天</p>
-                            <p style="font-size: 0.9rem;">首次对话时会分析您的性格和近期情绪</p>
+                    await loadSessions();
+                    document.getElementById('chatMessages').innerHTML = `
+                        <div style="text-align: center; color: #7f8c8d; padding: 50px;">
+                            <i class="fas fa-comments fa-3x" style="margin-bottom: 15px;"></i>
+                            <p>选择或创建一个会话开始对话</p>
                         </div>
                     `;
-                    chatHistory = [];
-                    
-                    await loadSessions();
-                    showStatus('对话已删除', 'success');
-                } else {
-                    showStatus('删除对话失败: ' + result.error, 'error');
+                    showStatus('会话删除成功', 'success');
                 }
             } catch (error) {
-                console.error('删除会话错误:', error);
-                showStatus('删除对话失败: ' + error.message, 'error');
+                console.error('删除会话失败:', error);
+                showStatus('删除会话失败', 'error');
             }
+        }
+
+        // 加载对话历史
+        async function loadChatHistory() {
+            if (!currentSessionId) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/conversation/sessions/${currentSessionId}/history?user_id=${currentUserId}&limit=50`);
+                if (response.ok) {
+                    const result = await response.json();
+                    chatMessages = result.history || [];
+                    renderChatMessages();
+                }
+            } catch (error) {
+                console.error('加载对话历史失败:', error);
+            }
+        }
+
+        // 渲染对话消息
+        function renderChatMessages() {
+            const container = document.getElementById('chatMessages');
+            if (chatMessages.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #7f8c8d; padding: 50px;">
+                        <i class="fas fa-comments fa-3x" style="margin-bottom: 15px;"></i>
+                        <p>开始对话吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = chatMessages.map(msg => {
+                const isUser = msg.role === 'user';
+                return `
+                    <div style="margin-bottom: 15px; display: flex; ${isUser ? 'justify-content: flex-end' : 'justify-content: flex-start'};">
+                        <div style="max-width: 70%; padding: 12px 18px; border-radius: 18px; 
+                            ${isUser ? 'background: #3498db; color: white;' : 'background: white; color: #333; border: 1px solid #ddd;'};
+                            box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.9rem; line-height: 1.5;">${escapeHtml(msg.content)}</div>
+                            <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px; text-align: right;">
+                                ${new Date(msg.timestamp).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.scrollTop = container.scrollHeight;
         }
 
         // 发送聊天消息
         async function sendChatMessage() {
-            if (!checkLogin()) {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) {
+                showStatus('请输入消息', 'error');
                 return;
             }
-            
+
             if (!currentSessionId) {
-                showStatus('请先选择或创建一个对话', 'error');
+                showStatus('请先选择或创建会话', 'error');
                 return;
             }
+
+            input.value = '';
             
-            const chatInput = document.getElementById('chatInput');
-            const message = chatInput.value.trim();
-            
-            if (!message) return;
-            
-            const userId = currentUser ? currentUser.id : 1;
-            const sessionId = currentSessionId;
-            const sendBtn = document.getElementById('sendChatBtn');
-            const chatStatus = document.getElementById('chatStatus');
-            
-            // 禁用按钮并显示加载状态
-            chatInput.disabled = true;
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = '<div class="loading" style="width: 16px; height: 16px; margin: 0 auto;"></div>';
-            
+            // 添加用户消息到界面
+            chatMessages.push({
+                role: 'user',
+                content: message,
+                timestamp: new Date().toISOString()
+            });
+            renderChatMessages();
+
             try {
-                // 显示用户消息
-                addChatMessage('user', message);
-                chatInput.value = '';
-                
-                // 显示状态
-                showChatStatus('正在思考...', 'info');
-                
-                // 调用 API
                 const response = await fetch(`${API_BASE_URL}/langgraph/chat`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message: message,
-                        user_id: userId,
-                        session_id: sessionId
+                        user_id: currentUserId,
+                        session_id: currentSessionId
                     })
                 });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // 显示助手回复
-                    addChatMessage('assistant', result.response);
-                    
-                    // 更新会话列表
-                    await loadSessions();
-                    
-                    // 显示状态信息
-                    let statusMessage = '回复成功';
-                    if (result.personality_analyzed) {
-                        statusMessage += ' | 已完成性格分析';
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        chatMessages.push({
+                            role: 'assistant',
+                            content: result.response || result.message || '抱歉，我无法回复',
+                            timestamp: new Date().toISOString()
+                        });
+                        renderChatMessages();
                     }
-                    if (result.used_cache) {
-                        statusMessage += ' | 使用缓存';
+                }
+            } catch (error) {
+                console.error('发送消息失败:', error);
+                showStatus('发送消息失败', 'error');
+            }
+        }
+
+        // 监听会话选择变化
+        document.addEventListener('DOMContentLoaded', function() {
+            const sessionSelect = document.getElementById('chatSessionSelect');
+            if (sessionSelect) {
+                sessionSelect.addEventListener('change', async function() {
+                    currentSessionId = this.value || null;
+                    if (currentSessionId) {
+                        await loadChatHistory();
                     }
-                    showChatStatus(statusMessage, 'success');
-                } else {
-                    showChatStatus(`失败: ${result.error}`, 'error');
-                    addChatMessage('assistant', '抱歉，我遇到了一些问题。请稍后再试。');
-                }
-                
-            } catch (error) {
-                console.error('聊天错误:', error);
-                showChatStatus(`错误: ${error.message}`, 'error');
-                addChatMessage('assistant', '抱歉，连接服务器失败。请检查服务器是否正常运行。');
-            } finally {
-                // 恢复按钮状态
-                chatInput.disabled = false;
-                sendBtn.disabled = false;
-                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 发送';
-                chatInput.focus();
-            }
-        }
-
-        // 添加聊天消息到界面
-        function addChatMessage(role, content, saveToHistory = true) {
-            const chatContainer = document.getElementById('chatContainer');
-            
-            // 如果是第一条消息，移除初始提示
-            if (chatHistory.length === 0 && saveToHistory) {
-                chatContainer.innerHTML = '';
-            }
-            
-            // 创建消息元素
-            const messageDiv = document.createElement('div');
-            messageDiv.style.cssText = `
-                margin-bottom: 15px;
-                display: flex;
-                align-items: flex-start;
-                gap: 10px;
-                ${role === 'user' ? 'flex-direction: row-reverse;' : ''}
-            `;
-            
-            // 头像
-            const avatar = document.createElement('div');
-            avatar.style.cssText = `
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                flex-shrink: 0;
-                ${role === 'user' 
-                    ? 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;' 
-                    : 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;'}
-            `;
-            avatar.innerHTML = role === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
-            
-            // 消息气泡
-            const bubble = document.createElement('div');
-            bubble.style.cssText = `
-                background: ${role === 'user' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white'};
-                color: ${role === 'user' ? 'white' : '#2c3e50'};
-                padding: 12px 16px;
-                border-radius: ${role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
-                max-width: 70%;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                line-height: 1.6;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-            `;
-            bubble.textContent = content;
-            
-            // 组装
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(bubble);
-            chatContainer.appendChild(messageDiv);
-            
-            // 滚动到底部
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            
-            // 保存到历史
-            if (saveToHistory) {
-                chatHistory.push({ role, content });
-            }
-        }
-
-        // 清空聊天历史
-        function clearChatHistory() {
-            const chatContainer = document.getElementById('chatContainer');
-            chatContainer.innerHTML = `
-                <div style="text-align: center; color: #7f8c8d; padding: 40px;">
-                    <i class="fas fa-robot fa-3x" style="color: #e0e0e0; margin-bottom: 20px;"></i>
-                    <p>开始与智能助手对话</p>
-                    <p style="font-size: 0.9rem;">首次对话时会分析您的性格和近期情绪</p>
-                </div>
-            `;
-            chatHistory = [];
-            hideChatStatus();
-            showStatus('聊天历史已清空', 'success');
-        }
-
-        // 显示聊天状态
-        function showChatStatus(message, type) {
-            const chatStatus = document.getElementById('chatStatus');
-            chatStatus.style.display = 'block';
-            chatStatus.textContent = message;
-            
-            if (type === 'success') {
-                chatStatus.style.cssText = 'margin-top: 10px; padding: 10px; border-radius: 8px; display: block; background: #d4edda; color: #155724;';
-            } else if (type === 'error') {
-                chatStatus.style.cssText = 'margin-top: 10px; padding: 10px; border-radius: 8px; display: block; background: #f8d7da; color: #721c24;';
-            } else {
-                chatStatus.style.cssText = 'margin-top: 10px; padding: 10px; border-radius: 8px; display: block; background: #d1ecf1; color: #0c5460;';
-            }
-        }
-
-        // 隐藏聊天状态
-        function hideChatStatus() {
-            document.getElementById('chatStatus').style.display = 'none';
-        }
-
-        // ============================================================
-        // 用户认证功能
-        // ============================================================
-
-        // 当前登录用户
-        let currentUser = null;
-
-        // 切换登录/注册标签
-        function switchAuthTab(tabId, eventObj) {
-            // 移除所有标签的active类
-            document.querySelectorAll('#authTab .tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.color = '#7f8c8d';
-                btn.style.background = 'none';
-            });
-            document.querySelectorAll('.auth-tab-content').forEach(content => {
-                content.style.display = 'none';
-            });
-
-            // 激活当前标签
-            if (eventObj && eventObj.target) {
-                let target = eventObj.target;
-                if (target.tagName === 'I') {
-                    target = target.parentElement;
-                }
-                target.classList.add('active');
-                target.style.background = '#3498db';
-                target.style.color = 'white';
-            }
-
-            document.getElementById(tabId).style.display = 'block';
-        }
-
-        // 显示认证状态
-        function showAuthStatus(message, type) {
-            const authStatus = document.getElementById('authStatus');
-            authStatus.style.display = 'block';
-            authStatus.textContent = message;
-
-            if (type === 'success') {
-                authStatus.style.cssText = 'margin-top: 20px; padding: 15px; border-radius: 10px; display: block; background: #d4edda; color: #155724;';
-            } else if (type === 'error') {
-                authStatus.style.cssText = 'margin-top: 20px; padding: 15px; border-radius: 10px; display: block; background: #f8d7da; color: #721c24;';
-            } else {
-                authStatus.style.cssText = 'margin-top: 20px; padding: 15px; border-radius: 10px; display: block; background: #d1ecf1; color: #0c5460;';
-            }
-
-            // 3秒后隐藏
-            setTimeout(() => {
-                authStatus.style.display = 'none';
-            }, 3000);
-        }
-
-        // 检查登录状态并更新页面显示
-        function updateLoginState() {
-            const welcomePage = document.getElementById('welcomePage');
-            const mainContent = document.getElementById('mainContent');
-            const authArea = document.getElementById('authArea');
-            
-            if (currentUser) {
-                // 已登录，显示主内容，隐藏欢迎页面和用户认证区域
-                welcomePage.style.display = 'none';
-                authArea.style.display = 'none';
-                mainContent.style.display = 'block';
-            } else {
-                // 未登录，显示欢迎页面和用户认证区域，隐藏主内容
-                welcomePage.style.display = 'block';
-                authArea.style.display = 'block';
-                mainContent.style.display = 'none';
-            }
-        }
-
-        // 检查是否已登录
-        function checkLogin() {
-            if (!currentUser) {
-                showStatus('请先登录', 'error');
-                switchTab('authTab', null);
-                return false;
-            }
-            return true;
-        }
-
-        // 处理登录
-        async function handleLogin() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
-
-            if (!username || !password) {
-                showAuthStatus('请输入用户名和密码', 'error');
-                return;
-            }
-
-            try {
-                showAuthStatus('正在登录...', 'info');
-
-                const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        password: password
-                    })
                 });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    currentUser = result.user;
-                    showAuthStatus('登录成功！', 'success');
-                    updateCurrentUserInfo();
-                    updateLoginState();
-                    showStatus(`欢迎回来，${currentUser.username}！`, 'success');
-                    // 登录成功后加载会话列表
-                    await loadSessions();
-
-                    // 清空表单
-                    document.getElementById('loginUsername').value = '';
-                    document.getElementById('loginPassword').value = '';
-                } else {
-                    showAuthStatus(`登录失败: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                console.error('登录错误:', error);
-                showAuthStatus(`登录失败: ${error.message}`, 'error');
-            }
-        }
-
-        // 处理注册
-        async function handleRegister() {
-            const username = document.getElementById('regUsername').value.trim();
-            const password = document.getElementById('regPassword').value;
-            const confirmPassword = document.getElementById('regConfirmPassword').value;
-            const email = document.getElementById('regEmail').value.trim() || null;
-            const ageGroup = document.getElementById('regAgeGroup').value;
-            const stressLevel = document.getElementById('regStressLevel').value;
-            const hasSupport = document.getElementById('regHasSupport').value === 'true';
-
-            if (!username || !password) {
-                showAuthStatus('请输入用户名和密码', 'error');
-                return;
             }
 
-            if (password !== confirmPassword) {
-                showAuthStatus('两次输入的密码不一致', 'error');
-                return;
-            }
-
-            if (password.length < 6) {
-                showAuthStatus('密码长度至少为6位', 'error');
-                return;
-            }
-
-            try {
-                showAuthStatus('正在注册...', 'info');
-
-                const response = await fetch(`${API_BASE_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        password: password,
-                        email: email,
-                        age_group: ageGroup,
-                        stress_level: stressLevel,
-                        has_support_system: hasSupport
-                    })
+            // 监听回车发送消息
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendChatMessage();
+                    }
                 });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    currentUser = result.user;
-                    showAuthStatus('注册成功！', 'success');
-                    updateCurrentUserInfo();
-                    updateLoginState();
-                    showStatus(`欢迎，${currentUser.username}！您已成功注册`, 'success');
-
-                    // 清空表单
-                    document.getElementById('regUsername').value = '';
-                    document.getElementById('regPassword').value = '';
-                    document.getElementById('regConfirmPassword').value = '';
-                    document.getElementById('regEmail').value = '';
-                } else {
-                    showAuthStatus(`注册失败: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                console.error('注册错误:', error);
-                showAuthStatus(`注册失败: ${error.message}`, 'error');
             }
-        }
 
-        // 更新当前用户信息显示
-        function updateCurrentUserInfo() {
-            const userInfoDiv = document.getElementById('currentUserInfo');
-            const userInfoContent = document.getElementById('userInfoContent');
-
-            if (currentUser) {
-                userInfoDiv.style.display = 'block';
-                
-                const ageGroups = {
-                    'child': '儿童 (0-12岁)',
-                    'teen': '青少年 (13-19岁)',
-                    'adult': '成人 (20-59岁)',
-                    'elder': '老年人 (60岁以上)'
-                };
-                
-                const stressLevels = {
-                    'low': '低',
-                    'medium': '中',
-                    'high': '高'
-                };
-
-                userInfoContent.innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                        <div>
-                            <strong>用户名:</strong> ${currentUser.username}
-                        </div>
-                        <div>
-                            <strong>ID:</strong> ${currentUser.id}
-                        </div>
-                        ${currentUser.email ? `<div><strong>邮箱:</strong> ${currentUser.email}</div>` : ''}
-                        <div>
-                            <strong>年龄组:</strong> ${ageGroups[currentUser.age_group] || currentUser.age_group}
-                        </div>
-                        <div>
-                            <strong>压力水平:</strong> ${stressLevels[currentUser.stress_level] || currentUser.stress_level}
-                        </div>
-                        <div>
-                            <strong>社会支持系统:</strong> ${currentUser.has_support_system ? '有' : '无'}
-                        </div>
-                        <div>
-                            <strong>注册时间:</strong> ${new Date(currentUser.created_at).toLocaleString()}
-                        </div>
-                    </div>
-                `;
-            } else {
-                userInfoDiv.style.display = 'none';
-            }
-        }
-
-        // 处理退出登录
-        function handleLogout() {
-            currentUser = null;
-            currentSessionId = null;
-            updateCurrentUserInfo();
-            updateLoginState();
-            clearChatHistory();
-            showStatus('已退出登录', 'success');
-        }
-
-        // 用户认证标签样式和登录状态初始化
-        // 这个函数将在主DOMContentLoaded中调用
-        function initializeAuth() {
-            const loginTabBtn = document.getElementById('loginTabBtn');
-            if (loginTabBtn) {
-                loginTabBtn.style.background = '#3498db';
-                loginTabBtn.style.color = 'white';
-            }
-            // 初始化登录状态
-            updateLoginState();
-        }
+            // 加载会话列表
+            loadSessions();
+        });
     </script>
 </body>
 </html>

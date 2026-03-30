@@ -662,6 +662,116 @@ def predict_with_advice():
 
 
 # ================ 新增的API端点：综合情绪分析 ================
+@app.route('/comprehensive_analysis', methods=['POST'])
+def comprehensive_analysis():
+    """
+    综合情绪分析并调用阿里云大模型。
+
+    请求体格式:
+    {
+        "use_history": true,
+        "analysis_type": "health_advice",
+        "days": 7,
+        "user_context": {
+            "age_group": "adult",
+            "stress_level": "medium",
+            "has_support_system": true,
+            "is_first_time": false
+        }
+    }
+    """
+    try:
+        if not request.is_json:
+            return jsonify({
+                'success': False,
+                'error': '请求必须是JSON格式',
+                'timestamp': datetime.now().isoformat()
+            }), 400
+
+        data = request.get_json() or {}
+        use_history = data.get('use_history', True)
+        analysis_type = data.get('analysis_type', 'health_advice')
+        days = data.get('days', 7)
+        user_context = data.get('user_context') or {
+            "age_group": "adult",
+            "stress_level": "medium",
+            "has_support_system": True,
+            "is_first_time": False
+        }
+
+        # 读取历史数据
+        history_data = []
+        if use_history:
+            # 尝试多个可能的目录
+            possible_dirs = [
+                os.path.join(PROJECT_ROOT, "data", "monitor_results", "results"),
+                os.path.join(PROJECT_ROOT, "backend", "data", "monitor_results", "results"),
+                os.path.join(os.path.dirname(PROJECT_ROOT), "data", "monitor_results", "results"),
+            ]
+            
+            results_dir = None
+            for dir_path in possible_dirs:
+                if os.path.exists(dir_path):
+                    results_dir = dir_path
+                    print(f"📂 使用数据目录: {results_dir}")
+                    break
+            
+            if results_dir:
+                for filename in os.listdir(results_dir):
+                    if not filename.endswith('.json'):
+                        continue
+                    filepath = os.path.join(results_dir, filename)
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            result = json.load(f)
+                        if days:
+                            result_time = datetime.fromisoformat(result['timestamp'].replace('Z', '+00:00'))
+                            if result_time.tzinfo is not None:
+                                result_time = result_time.replace(tzinfo=None)
+                            cutoff_time = datetime.now() - timedelta(days=days)
+                            if result_time < cutoff_time:
+                                continue
+                        history_data.append(result)
+                    except Exception as e:
+                        print(f"⚠️  读取监测结果失败 {filename}: {e}")
+
+        # 如果没有历史数据，生成示例数据
+        if not history_data:
+            history_data = generate_sample_data(10)
+
+        # 分析数据
+        analysis_result = analyze_comprehensive_data(history_data, analysis_type)
+
+        # 调用大模型生成建议（如果可用）
+        llm_advice = None
+        if OPENAI_AVAILABLE and health_advisor:
+            try:
+                latest_emotion = history_data[-1] if history_data else None
+                if latest_emotion:
+                    llm_advice = health_advisor.generate_advice(latest_emotion, user_context)
+            except Exception as e:
+                print(f"⚠️  大模型建议生成失败: {e}")
+
+        return jsonify({
+            'success': True,
+            'message': '综合分析完成',
+            'analysis': analysis_result,
+            'llm_advice': llm_advice,
+            'total_samples': len(history_data),
+            'timestamp': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        print(f"❌ 综合分析失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
 @app.route('/multi_agent_analysis', methods=['POST'])
 def multi_agent_analysis():
     """
@@ -702,9 +812,22 @@ def multi_agent_analysis():
             "is_first_time": False
         }
 
-        results_dir = os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+        # 尝试多个可能的目录
+        possible_dirs = [
+            os.path.join(PROJECT_ROOT, "data", "monitor_results", "results"),
+            os.path.join(PROJECT_ROOT, "backend", "data", "monitor_results", "results"),
+            os.path.join(os.path.dirname(PROJECT_ROOT), "data", "monitor_results", "results"),
+        ]
+        
+        results_dir = None
+        for dir_path in possible_dirs:
+            if os.path.exists(dir_path):
+                results_dir = dir_path
+                print(f"📂 使用数据目录: {results_dir}")
+                break
+        
         history_data = []
-        if os.path.exists(results_dir):
+        if results_dir:
             for filename in os.listdir(results_dir):
                 if not filename.endswith('.json'):
                     continue
