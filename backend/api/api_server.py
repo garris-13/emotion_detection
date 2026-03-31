@@ -744,13 +744,17 @@ def comprehensive_analysis():
 
         # 调用大模型生成建议（如果可用）
         llm_advice = None
-        if OPENAI_AVAILABLE and health_advisor:
+        if OPENAI_AVAILABLE:
             try:
-                latest_emotion = history_data[-1] if history_data else None
-                if latest_emotion:
-                    llm_advice = health_advisor.generate_advice(latest_emotion, user_context)
+                llm_result = call_aliyun_llm(analysis_result, analysis_type, user_context)
+                if llm_result.get('success'):
+                    llm_advice = llm_result.get('raw_response')
+                else:
+                    print(f"⚠️  大模型调用失败，使用算法分析: {llm_result.get('error')}")
             except Exception as e:
                 print(f"⚠️  大模型建议生成失败: {e}")
+                import traceback
+                traceback.print_exc()
 
         return jsonify({
             'success': True,
@@ -2158,6 +2162,7 @@ def register():
             return jsonify({
                 'success': True,
                 'message': '注册成功',
+                'user_id': user.get('id'),
                 'user': user_data,
                 'timestamp': datetime.now().isoformat()
             })
@@ -2222,6 +2227,7 @@ def login():
             return jsonify({
                 'success': True,
                 'message': '登录成功',
+                'user_id': user.get('id'),
                 'user': user,
                 'timestamp': datetime.now().isoformat()
             })

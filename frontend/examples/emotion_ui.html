@@ -556,6 +556,206 @@
             margin-top: 30px;
         }
 
+        /* 登录注册样式 */
+        .auth-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+        }
+
+        .auth-section h4 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .auth-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .auth-form input {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .auth-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .auth-btn.login {
+            background: white;
+            color: #667eea;
+        }
+
+        .auth-btn.register {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid white;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .user-info span {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        /* 登录欢迎页面样式 */
+        .welcome-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .welcome-container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .welcome-container h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .welcome-container h1 i {
+            color: #667eea;
+            font-size: 2.5rem;
+        }
+
+        .welcome-container p {
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .welcome-auth-section {
+            margin-top: 30px;
+        }
+
+        .welcome-auth-section h4 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.3rem;
+        }
+
+        .welcome-auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-auth-form input {
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .welcome-auth-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .welcome-auth-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .welcome-auth-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .welcome-auth-btn.login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .welcome-auth-btn.register {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .welcome-auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .main-app {
+            display: none;
+        }
+
+        .main-app.active {
+            display: block;
+        }
+
         /* 新增样式 */
         .image-analysis-buttons {
             display: flex;
@@ -783,6 +983,32 @@
     </style>
 </head>
 <body>
+    <!-- 登录欢迎页面 -->
+    <div class="welcome-page" id="welcomePage">
+        <div class="welcome-container">
+            <h1><i class="fas fa-smile"></i> 表情识别与健康建议系统</h1>
+            <p>上传面部图像，系统将识别您的情绪并提供个性化的健康建议和情绪管理策略</p>
+            
+            <div class="welcome-auth-section">
+                <h4><i class="fas fa-user-circle"></i> 欢迎登录</h4>
+                <div class="welcome-auth-form">
+                    <input type="text" id="welcomeUsername" placeholder="请输入用户名">
+                    <input type="password" id="welcomePassword" placeholder="请输入密码">
+                </div>
+                <div class="welcome-auth-buttons">
+                    <button class="welcome-auth-btn login" onclick="handleWelcomeLogin()">
+                        <i class="fas fa-sign-in-alt"></i> 登录
+                    </button>
+                    <button class="welcome-auth-btn register" onclick="handleWelcomeRegister()">
+                        <i class="fas fa-user-plus"></i> 注册
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用界面 -->
+    <div class="main-app" id="mainApp">
     <div class="container">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -790,6 +1016,18 @@
         <div class="header">
             <h1><i class="fas fa-smile"></i> 表情识别与健康建议系统</h1>
             <p>上传面部图像，系统将识别您的情绪并提供个性化的健康建议和情绪管理策略</p>
+
+            <!-- 用户信息区域 -->
+            <div class="auth-section" id="authSection">
+                <div id="userInfo">
+                    <div class="user-info">
+                        <span><i class="fas fa-user-circle"></i> 欢迎，<span id="currentUsername"></span></span>
+                        <button class="logout-btn" onclick="handleLogout()">
+                            <i class="fas fa-sign-out-alt"></i> 退出登录
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <!-- 连接状态显示 -->
             <div class="connection-status status-checking" id="connectionStatus">
@@ -1197,6 +1435,7 @@
             </p>
         </div>
     </div>
+    </div> <!-- 结束 main-app -->
 
     <!-- 状态提示栏 -->
     <div id="statusBar" class="status-bar"></div>
@@ -1243,7 +1482,7 @@
             'neutral': '平静'
         };
 
-        // 初始化页面
+        // 初始化页面 - 合并所有 DOMContentLoaded 事件
         document.addEventListener('DOMContentLoaded', function() {
             console.log("页面加载完成，初始化系统...");
 
@@ -1254,8 +1493,8 @@
             // 检查关键元素是否存在
             checkRequiredElements();
 
-            // 检查API连接
-            checkConnection();
+            // 检查登录状态
+            checkLoginStatus();
 
             // 设置自动连接检查（每30秒一次）
             setInterval(checkConnection, 30000);
@@ -1268,6 +1507,35 @@
 
             // 每10秒更新一次监测状态
             setInterval(checkMonitorStatus, 10000);
+
+            // 监听会话选择变化
+            const sessionSelect = document.getElementById('chatSessionSelect');
+            if (sessionSelect) {
+                sessionSelect.addEventListener('change', async function() {
+                    currentSessionId = this.value || null;
+                    if (currentSessionId) {
+                        await loadChatHistory();
+                    } else {
+                        // 清空对话显示
+                        document.getElementById('chatMessages').innerHTML = `
+                            <div style="text-align: center; color: #7f8c8d; padding: 50px;">
+                                <i class="fas fa-comments fa-3x" style="margin-bottom: 15px;"></i>
+                                <p>选择或创建一个会话开始对话</p>
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            // 监听回车发送消息
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendChatMessage();
+                    }
+                });
+            }
         });
 
         function checkRequiredElements() {
@@ -1925,7 +2193,7 @@
             const analysis = result.analysis || {};
             const llmAdvice = result.llm_advice;
             const totalSamples = result.total_samples || 0;
-            const isAlgorithmBased = !llmAdvice;
+            let isAlgorithmBased = !llmAdvice;
 
             // 更新统计信息（如果元素存在）
             if (llmTotalSamples) {
@@ -1966,9 +2234,10 @@
             // 获取分析内容
             let displayContent = '';
 
-            if (llmAdvice) {
-                // 大模型响应
-                displayContent = renderSimpleMarkdown(typeof llmAdvice === 'string' ? llmAdvice : JSON.stringify(llmAdvice));
+            if (llmAdvice && typeof llmAdvice === 'string' && llmAdvice.trim().length > 0) {
+                // 大模型响应 - 使用 Markdown 渲染
+                displayContent = renderSimpleMarkdown(llmAdvice);
+                isAlgorithmBased = false;
             } else {
                 // 算法生成的分析 - 根据分析类型构建内容
                 if (analysisType === 'health_advice') {
@@ -3031,31 +3300,189 @@ async function generateMarkdownReport() {
             return fetchPromise;
         };
 
-        // ================ AI对话功能 ================
+        // ================ 登录注册功能 ================
         let currentUserId = 1;
+        let isLoggedIn = false;
+        let currentUsername = '';
+
+        function checkLoginStatus() {
+            const savedUserId = localStorage.getItem('currentUserId');
+            const savedUsername = localStorage.getItem('currentUsername');
+            console.log("🔍 检查登录状态 - savedUserId:", savedUserId, "savedUsername:", savedUsername);
+            
+            if (savedUserId && savedUsername) {
+                const parsedUserId = parseInt(savedUserId);
+                if (!isNaN(parsedUserId)) {
+                    currentUserId = parsedUserId;
+                    currentUsername = savedUsername;
+                    isLoggedIn = true;
+                    console.log("✅ 已恢复登录状态 - currentUserId:", currentUserId);
+                    showMainApp();
+                } else {
+                    console.error("❌ 无法解析 userId，清理登录状态");
+                    localStorage.removeItem('currentUserId');
+                    localStorage.removeItem('currentUsername');
+                    showWelcomePage();
+                }
+            } else {
+                console.log("⚠️ 未找到登录状态，显示欢迎页面");
+                showWelcomePage();
+            }
+        }
+
+        function showWelcomePage() {
+            document.getElementById('welcomePage').style.display = 'flex';
+            document.getElementById('mainApp').classList.remove('active');
+        }
+
+        function showMainApp() {
+            document.getElementById('welcomePage').style.display = 'none';
+            document.getElementById('mainApp').classList.add('active');
+            document.getElementById('currentUsername').textContent = currentUsername;
+            checkConnection();
+            loadSessions();
+        }
+
+        async function handleWelcomeLogin() {
+            const username = document.getElementById('welcomeUsername').value.trim();
+            const password = document.getElementById('welcomePassword').value;
+
+            if (!username || !password) {
+                showStatus('请输入用户名和密码', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log("📡 登录响应 - result.user_id:", result.user_id);
+                    
+                    // 确保 user_id 是数字
+                    currentUserId = typeof result.user_id === 'number' ? result.user_id : parseInt(result.user_id);
+                    currentUsername = username;
+                    isLoggedIn = true;
+
+                    console.log("✅ 设置登录状态 - currentUserId:", currentUserId);
+
+                    // 保存登录状态（确保保存为字符串）
+                    localStorage.setItem('currentUserId', String(currentUserId));
+                    localStorage.setItem('currentUsername', currentUsername);
+
+                    showMainApp();
+                    showStatus('登录成功！', 'success');
+                } else {
+                    showStatus(result.error || '登录失败', 'error');
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                showStatus('登录失败，请检查网络连接', 'error');
+            }
+        }
+
+        async function handleWelcomeRegister() {
+            const username = document.getElementById('welcomeUsername').value.trim();
+            const password = document.getElementById('welcomePassword').value;
+
+            if (!username || !password) {
+                showStatus('请输入用户名和密码', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus('注册成功！请登录', 'success');
+                } else {
+                    showStatus(result.error || '注册失败', 'error');
+                }
+            } catch (error) {
+                console.error('注册错误:', error);
+                showStatus('注册失败，请检查网络连接', 'error');
+            }
+        }
+
+        async function handleLogin() {
+            // 这个函数保留用于兼容性
+            await handleWelcomeLogin();
+        }
+
+        async function handleRegister() {
+            // 这个函数保留用于兼容性
+            await handleWelcomeRegister();
+        }
+
+        function handleLogout() {
+            currentUserId = 1;
+            currentUsername = '';
+            isLoggedIn = false;
+
+            // 清除登录状态
+            localStorage.removeItem('currentUserId');
+            localStorage.removeItem('currentUsername');
+
+            showWelcomePage();
+            showStatus('已退出登录', 'success');
+
+            // 重置会话
+            currentSessionId = null;
+        }
+
+        // ================ AI对话功能 ================
         let currentSessionId = null;
         let chatMessages = [];
 
         // 加载会话列表
         async function loadSessions() {
+            console.log("🔄 正在加载会话列表... currentUserId =", currentUserId);
             try {
-                const response = await fetch(`${API_BASE_URL}/conversation/sessions?user_id=${currentUserId}`);
+                const url = `${API_BASE_URL}/conversation/sessions?user_id=${currentUserId}`;
+                console.log("📡 请求URL:", url);
+                
+                const response = await fetch(url);
+                console.log("📡 响应状态:", response.status);
+                
                 if (response.ok) {
                     const result = await response.json();
+                    console.log("📡 响应数据:", result);
+                    
                     const select = document.getElementById('chatSessionSelect');
+                    if (!select) {
+                        console.error("❌ 找不到 chatSessionSelect 元素");
+                        return;
+                    }
+                    
                     select.innerHTML = '<option value="">选择会话...</option>';
                     
                     if (result.success && result.sessions) {
+                        console.log("✅ 找到", result.sessions.length, "个会话");
                         result.sessions.forEach(session => {
                             const option = document.createElement('option');
                             option.value = session.id;
                             option.textContent = session.title || '未命名会话';
                             select.appendChild(option);
                         });
+                    } else {
+                        console.log("⚠️ 没有找到会话或响应格式不对");
                     }
+                } else {
+                    console.error("❌ 请求失败，状态码:", response.status);
                 }
             } catch (error) {
-                console.error('加载会话失败:', error);
+                console.error('❌ 加载会话失败:', error);
             }
         }
 
@@ -3185,6 +3612,7 @@ async function generateMarkdownReport() {
 
             container.innerHTML = chatMessages.map(msg => {
                 const isUser = msg.role === 'user';
+                const timestamp = msg.created_at || msg.timestamp || new Date().toISOString();
                 return `
                     <div style="margin-bottom: 15px; display: flex; ${isUser ? 'justify-content: flex-end' : 'justify-content: flex-start'};">
                         <div style="max-width: 70%; padding: 12px 18px; border-radius: 18px; 
@@ -3192,7 +3620,7 @@ async function generateMarkdownReport() {
                             box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                             <div style="font-size: 0.9rem; line-height: 1.5;">${escapeHtml(msg.content)}</div>
                             <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px; text-align: right;">
-                                ${new Date(msg.timestamp).toLocaleTimeString()}
+                                ${new Date(timestamp).toLocaleTimeString()}
                             </div>
                         </div>
                     </div>
@@ -3254,32 +3682,6 @@ async function generateMarkdownReport() {
                 showStatus('发送消息失败', 'error');
             }
         }
-
-        // 监听会话选择变化
-        document.addEventListener('DOMContentLoaded', function() {
-            const sessionSelect = document.getElementById('chatSessionSelect');
-            if (sessionSelect) {
-                sessionSelect.addEventListener('change', async function() {
-                    currentSessionId = this.value || null;
-                    if (currentSessionId) {
-                        await loadChatHistory();
-                    }
-                });
-            }
-
-            // 监听回车发送消息
-            const chatInput = document.getElementById('chatInput');
-            if (chatInput) {
-                chatInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        sendChatMessage();
-                    }
-                });
-            }
-
-            // 加载会话列表
-            loadSessions();
-        });
     </script>
 </body>
 </html>

@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS emotion_records (
 CREATE TABLE IF NOT EXISTS user_personality_analysis (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL COMMENT '用户ID',
-    analysis_period ENUM('6months', '1year') NOT NULL COMMENT '分析周期',
+    analysis_period ENUM('1month', '6months', '1year') NOT NULL COMMENT '分析周期',
     start_date DATE NOT NULL COMMENT '分析开始日期',
     end_date DATE NOT NULL COMMENT '分析结束日期',
     personality_summary TEXT COMMENT '性格总结',

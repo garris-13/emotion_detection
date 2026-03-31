@@ -83,25 +83,44 @@ class LangGraphEmotionAgent:
             print(f"❌ 数据库连接失败: {e}")
 
     def _build_graph(self):
-        """构建 LangGraph 状态图（优化版 - 跳过性格和情绪分析）"""
+        """构建 LangGraph 状态图（完整版 - 包含性格和情绪分析）"""
         # 暂时禁用 SQLite 检查点存储器（Windows 兼容性问题）
         self.checkpointer = None  # 暂时禁用检查点
 
         # 构建状态图
         workflow = StateGraph(AgentState)
 
-        # 添加节点 - 简化流程，直接生成回复
-        workflow.add_node("generate_simple_response", self._generate_simple_response_node)
+        # 添加节点
+        workflow.add_node("check_cache", self._check_cache_node)
+        workflow.add_node("analyze_personality", self._analyze_personality_node)
+        workflow.add_node("analyze_recent_emotion", self._analyze_recent_emotion_node)
+        workflow.add_node("build_system_prompt", self._build_system_prompt_node)
+        workflow.add_node("save_cache", self._save_cache_node)
+        workflow.add_node("generate_response", self._generate_response_node)
 
         # 设置入口点
-        workflow.set_entry_point("generate_simple_response")
+        workflow.set_entry_point("check_cache")
         
-        # 直接到结束
-        workflow.add_edge("generate_simple_response", END)
+        # 条件边：决定是否使用缓存
+        workflow.add_conditional_edges(
+            "check_cache",
+            self._should_use_cache,
+            {
+                "use_cache": "generate_response",
+                "analyze": "analyze_personality"
+            }
+        )
+        
+        # 分析流程
+        workflow.add_edge("analyze_personality", "analyze_recent_emotion")
+        workflow.add_edge("analyze_recent_emotion", "build_system_prompt")
+        workflow.add_edge("build_system_prompt", "save_cache")
+        workflow.add_edge("save_cache", "generate_response")
+        workflow.add_edge("generate_response", END)
 
         # 编译图（不使用检查点）
         self.graph = workflow.compile()
-        print("✅ LangGraph 构建成功（优化版 - 快速响应）")
+        print("✅ LangGraph 构建成功（完整版 - 包含性格和情绪分析）")
     
     def _generate_simple_response_node(self, state: AgentState) -> AgentState:
         """简化版回复生成节点 - 不做性格和情绪分析"""
@@ -193,12 +212,12 @@ class LangGraphEmotionAgent:
         return "use_cache" if state["step"] == "use_cache" else "analyze"
 
     def _analyze_personality_node(self, state: AgentState) -> AgentState:
-        """分析用户性格（半年-一年）"""
-        print("🧠 分析用户性格（半年-一年）...")
+        """分析用户性格（半年左右）"""
+        print("🧠 分析用户性格（半年左右）...")
         
         user_id = state["user_id"]
         
-        # 从数据库获取半年到一年的数据
+        # 从数据库获取半年的数据
         end_date = datetime.now()
         start_date = end_date - timedelta(days=180)  # 6个月
         
@@ -211,6 +230,34 @@ class LangGraphEmotionAgent:
         else:
             # 调用 LLM 分析性格
             personality_summary = self._analyze_personality_with_llm(records)
+            
+            # 计算情绪分布用于存储
+            emotion_counts = {}
+            for record in records:
+                emo = record['emotion']
+                emotion_counts[emo] = emotion_counts.get(emo, 0) + 1
+            
+            # 计算稳定性分数（简单版：情绪多样性的反面）
+            total_records = len(records)
+            dominant_count = max(emotion_counts.values()) if emotion_counts else 0
+            stability_score = (dominant_count / total_records * 100) if total_records > 0 else 50
+            
+            # 保存到数据库
+            if self.db:
+                try:
+                    self.db.save_personality_analysis(
+                        user_id=user_id,
+                        analysis_period='6months',
+                        start_date=start_date,
+                        end_date=end_date,
+                        personality_summary=personality_summary,
+                        emotion_patterns=emotion_counts,
+                        dominant_emotions=emotion_counts,
+                        stability_score=stability_score
+                    )
+                    print("💾 性格分析已保存到数据库")
+                except Exception as e:
+                    print(f"⚠️ 保存性格分析失败: {e}")
         
         return {**state, "personality_summary": personality_summary}
 
@@ -254,62 +301,104 @@ class LangGraphEmotionAgent:
             return "根据您的情绪数据，您是一位情感丰富的人。"
 
     def _analyze_recent_emotion_node(self, state: AgentState) -> AgentState:
-        """分析用户最近情绪（1-3个月）"""
-        print("📈 分析用户最近情绪（1-3个月）...")
+        """分析用户最近情绪（1个月左右 + 最近3次）"""
+        print("📈 分析用户最近情绪（1个月左右 + 最近3次）...")
         
         user_id = state["user_id"]
         
-        # 从数据库获取最近1-3个月的数据
+        # 从数据库获取最近1个月的数据
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=90)  # 3个月
+        start_date = end_date - timedelta(days=30)  # 1个月
         
-        records = []
+        records_month = []
+        records_recent_3 = []
         if self.db:
-            records = self.db.get_emotion_records(user_id, start_date=start_date, end_date=end_date)
+            records_month = self.db.get_emotion_records(user_id, start_date=start_date, end_date=end_date)
+            # 获取最近3次记录（不限制时间）
+            all_records = self.db.get_emotion_records(user_id)
+            records_recent_3 = all_records[:3] if all_records else []
         
-        if not records:
+        if not records_month and not records_recent_3:
             recent_emotion_summary = "暂无最近的情绪监测数据。"
         else:
             # 调用 LLM 分析最近情绪
-            recent_emotion_summary = self._analyze_recent_emotion_with_llm(records)
+            recent_emotion_summary = self._analyze_recent_emotion_with_llm(records_month, records_recent_3)
+            
+            # 计算情绪分布用于存储
+            all_records_for_save = records_month + records_recent_3
+            emotion_counts = {}
+            for record in all_records_for_save:
+                emo = record['emotion']
+                emotion_counts[emo] = emotion_counts.get(emo, 0) + 1
+            
+            # 计算稳定性分数
+            total_records = len(all_records_for_save)
+            dominant_count = max(emotion_counts.values()) if emotion_counts else 0
+            stability_score = (dominant_count / total_records * 100) if total_records > 0 else 50
+            
+            # 保存到数据库（使用 1month 周期）
+            if self.db:
+                try:
+                    self.db.save_personality_analysis(
+                        user_id=user_id,
+                        analysis_period='1month',
+                        start_date=start_date,
+                        end_date=end_date,
+                        personality_summary=recent_emotion_summary,
+                        emotion_patterns=emotion_counts,
+                        dominant_emotions=emotion_counts,
+                        stability_score=stability_score
+                    )
+                    print("💾 最近情绪分析已保存到数据库")
+                except Exception as e:
+                    print(f"⚠️ 保存最近情绪分析失败: {e}")
         
         return {**state, "recent_emotion_summary": recent_emotion_summary}
 
-    def _analyze_recent_emotion_with_llm(self, records: List[Dict]) -> str:
-        """使用 LLM 分析最近情绪"""
+    def _analyze_recent_emotion_with_llm(self, records_month: List[Dict], records_recent_3: List[Dict]) -> str:
+        """使用 LLM 分析最近情绪（1个月 + 最近3次）"""
         emotion_zh_map = {
             'surprised': '惊讶', 'fear': '恐惧', 'disgust': '厌恶',
             'happy': '快乐', 'sad': '悲伤', 'anger': '愤怒', 'neutral': '平静'
         }
         
-        # 统计情绪分布
+        # 统计1个月的情绪分布
         emotion_counts = {}
-        for record in records:
+        for record in records_month:
             emo = emotion_zh_map.get(record['emotion'], record['emotion'])
             emotion_counts[emo] = emotion_counts.get(emo, 0) + 1
         
-        # 准备数据摘要
-        data_summary = []
-        for record in records[-30:]:  # 最近30条
+        # 准备1个月数据摘要
+        data_summary_month = []
+        for record in records_month[-20:]:  # 最近20条
             emo = emotion_zh_map.get(record['emotion'], record['emotion'])
-            data_summary.append(f"{record['recorded_at'].strftime('%m-%d %H:%M')}: {emo}")
+            data_summary_month.append(f"{record['recorded_at'].strftime('%m-%d %H:%M')}: {emo}")
         
-        dist_str = ', '.join([f"{k}: {v}次" for k, v in emotion_counts.items()])
+        # 准备最近3次数据
+        data_summary_recent = []
+        for record in records_recent_3:
+            emo = emotion_zh_map.get(record['emotion'], record['emotion'])
+            data_summary_recent.append(f"{record['recorded_at'].strftime('%m-%d %H:%M')}: {emo} (置信度: {record['confidence']:.2f})")
         
-        prompt = f"""你是一位温暖的情绪健康顾问。请根据以下用户最近的情绪数据，分析用户的情绪状态。
+        dist_str = ', '.join([f"{k}: {v}次" for k, v in emotion_counts.items()]) if emotion_counts else "无数据"
+        
+        prompt = f"""你是一位温暖的情绪健康顾问。请根据以下用户的情绪数据，分析用户的情绪状态。
 
-最近情绪数据（最近{len(records)}条）：
-{chr(10).join(data_summary)}
+【近1个月情绪数据】（共{len(records_month)}条）
+{chr(10).join(data_summary_month) if data_summary_month else "无数据"}
 
 情绪分布：{dist_str}
 
+【最近3次情绪】
+{chr(10).join(data_summary_recent) if data_summary_recent else "无数据"}
+
 请从以下角度分析：
-1. 当前情绪状态
-2. 情绪变化趋势
+1. 当前情绪状态（基于最近3次）
+2. 近1个月情绪变化趋势
 3. 需要关注的点
 4. 简单的建议
 
-请用温暖、关怀的语言总结，不超过200字。"""
+请用温暖、关怀的语言总结，不超过250字。"""
 
         messages = [
             SystemMessage(content="你是一位温暖且专业的情绪健康顾问。"),
@@ -449,7 +538,7 @@ class LangGraphEmotionAgent:
 
     def chat(self, user_message: str, user_id: int = 1, session_id: str = None, 
              create_session: bool = True) -> Dict[str, Any]:
-        """与 Agent 对话（优化版 - 快速响应）"""
+        """与 Agent 对话（完整版 - 包含性格和情绪分析）"""
         if not self.graph:
             return {
                 "success": False,
@@ -458,6 +547,7 @@ class LangGraphEmotionAgent:
             }
         
         # 检查会话是否存在，如果不存在则创建
+        is_new_session = False
         if self.db and session_id:
             existing_session = self.db.get_conversation_session(session_id)
             if not existing_session and create_session:
@@ -466,6 +556,7 @@ class LangGraphEmotionAgent:
                 new_session = self.db.create_conversation_session(user_id, title)
                 if new_session:
                     session_id = new_session['id']
+                    is_new_session = True
         
         if not session_id:
             # 自动创建会话
@@ -474,8 +565,10 @@ class LangGraphEmotionAgent:
                 new_session = self.db.create_conversation_session(user_id, title)
                 if new_session:
                     session_id = new_session['id']
+                    is_new_session = True
             if not session_id:
                 session_id = str(uuid.uuid4())
+                is_new_session = True
         
         # 获取对话历史
         conversation_history = []
@@ -484,7 +577,17 @@ class LangGraphEmotionAgent:
             conversation_history = self.db.get_conversation_history(user_id, session_id)
             message_count = len(conversation_history)
         
-        # 初始状态
+        # 如果是新会话，清除缓存，强制重新分析
+        if is_new_session and self.db:
+            try:
+                # 删除该会话的缓存
+                delete_query = "DELETE FROM system_prompt_cache WHERE user_id = %s AND session_id = %s"
+                self.db._execute_query(delete_query, (user_id, session_id), commit=True)
+                print(f"🗑️ 已清除新会话的缓存，将重新分析用户数据")
+            except Exception as e:
+                print(f"⚠️ 清除缓存失败: {e}")
+        
+        # 初始状态 - 新会话强制分析
         initial_state: AgentState = {
             "user_id": user_id,
             "session_id": session_id,
@@ -494,7 +597,7 @@ class LangGraphEmotionAgent:
             "system_prompt": None,
             "conversation_history": conversation_history,
             "response": None,
-            "step": "check_cache"
+            "step": "analyze" if is_new_session else "check_cache"
         }
         
         try:
