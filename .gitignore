@@ -10,3 +10,5 @@ data/monitor_results/
 # IDE
 .vscode/
 .venv/
+
+backend/data

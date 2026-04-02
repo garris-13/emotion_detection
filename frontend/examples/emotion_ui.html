@@ -825,6 +825,7 @@
             border-radius: var(--radius-sm);
             border: 1px solid var(--border);
             min-height: 280px;
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -841,6 +842,15 @@
         }
         .monitor-preview-wrap .empty-state i {
             color: #64748b;
+        }
+        .monitor-preview-wrap #monitorPreviewOverlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
         }
 
         /* 监测抓拍画廊 */
@@ -1338,6 +1348,7 @@
                                 <p>点击「开始监测」后，此处将显示当前摄像头画面</p>
                             </div>
                             <img id="monitorPreviewImg" alt="监测实时画面" style="display:none;">
+                            <canvas id="monitorPreviewOverlay"></canvas>
                         </div>
                     </div>
                 </div>
@@ -1546,6 +1557,7 @@
     let monitorChart = null;
     let captureModalEscHandler = null;
     let monitorPreviewStreamOn = false;
+    let lastMonitorStatus = null;
     let currentImageData = null;
     let isConnected = false;
     let monitorInterval = null;
@@ -1600,7 +1612,13 @@
         setInterval(checkConnection, 30000);
         document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
         setTimeout(checkMonitorStatus, 1000);
-        setInterval(checkMonitorStatus, 10000);
+        setInterval(checkMonitorStatus, 1000);
+
+        const previewImg = document.getElementById('monitorPreviewImg');
+        if (previewImg) {
+            previewImg.addEventListener('load', () => renderMonitorFaceBox(lastMonitorStatus));
+        }
+        window.addEventListener('resize', () => renderMonitorFaceBox(lastMonitorStatus));
 
         const sessionSelect = document.getElementById('chatSessionSelect');
         if (sessionSelect) {
@@ -2036,8 +2054,49 @@
         try {
             const res = await fetch(`${API_BASE_URL}/monitor/status`);
             const result = await res.json();
-            if (result.success) updateMonitorUI(result.status);
+            if (result.success) {
+                lastMonitorStatus = result.status;
+                updateMonitorUI(result.status);
+            }
         } catch(e) {}
+    }
+
+    function renderMonitorFaceBox(status) {
+        const prevImg = document.getElementById('monitorPreviewImg');
+        const overlay = document.getElementById('monitorPreviewOverlay');
+        if (!prevImg || !overlay) return;
+
+        const ctx = overlay.getContext('2d');
+        if (!ctx) return;
+
+        const drawW = Math.max(1, prevImg.clientWidth || 0);
+        const drawH = Math.max(1, prevImg.clientHeight || 0);
+        overlay.width = drawW;
+        overlay.height = drawH;
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+        const shouldShow = !!(status && status.is_monitoring && status.latest_face_bbox && status.latest_frame_size);
+        overlay.style.display = shouldShow ? 'block' : 'none';
+        if (!shouldShow) return;
+
+        const frameW = status.latest_frame_size.width || 0;
+        const frameH = status.latest_frame_size.height || 0;
+        if (frameW <= 0 || frameH <= 0) return;
+
+        const box = status.latest_face_bbox;
+        const sx = drawW / frameW;
+        const sy = drawH / frameH;
+
+        const x = Math.max(0, box.x * sx);
+        const y = Math.max(0, box.y * sy);
+        const w = Math.max(0, box.width * sx);
+        const h = Math.max(0, box.height * sy);
+
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#22c55e';
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.12)';
+        ctx.strokeRect(x, y, w, h);
+        ctx.fillRect(x, y, w, h);
     }
 
     function updateMonitorUI(status) {
@@ -2047,11 +2106,12 @@
         const prevImg = document.getElementById('monitorPreviewImg');
         const prevPh = document.getElementById('monitorPreviewPlaceholder');
         const prevBadge = document.getElementById('monitorPreviewBadge');
+        const overlay = document.getElementById('monitorPreviewOverlay');
         if (!box) return;
         if (status.is_monitoring) {
             startBtn.style.display='none'; stopBtn.style.display='inline-flex';
             box.className='monitor-status-box running';
-            box.innerHTML=`<strong><i class="fas fa-circle-play"></i> 监测中</strong><div style="margin-top:6px; font-size:.85rem;">已抓拍: ${status.total_captures||0} 张 · 成功: ${status.successful_analyses||0} 张 · 间隔: ${status.capture_interval||5}s</div>`;
+            box.innerHTML=`<strong><i class="fas fa-circle-play"></i> 监测中</strong><div style="margin-top:6px; font-size:.85rem;">已抓拍: ${status.total_captures||0} 张 · 成功: ${status.successful_analyses||0} 张 · 间隔: ${status.capture_interval||5}s · 检测: ${status.face_detection_method||'unknown'}</div>`;
             if (prevPh) prevPh.style.display = 'none';
             if (prevImg) {
                 prevImg.style.display = 'block';
@@ -2061,6 +2121,8 @@
                 }
             }
             if (prevBadge) prevBadge.style.display = 'inline-flex';
+            if (overlay) overlay.style.display = 'block';
+            renderMonitorFaceBox(status);
         } else {
             startBtn.style.display='inline-flex'; stopBtn.style.display='none';
             box.className='monitor-status-box stopped';
@@ -2073,6 +2135,11 @@
             }
             if (prevPh) prevPh.style.display = 'block';
             if (prevBadge) prevBadge.style.display = 'none';
+            if (overlay) {
+                const ctx = overlay.getContext('2d');
+                if (ctx) ctx.clearRect(0, 0, overlay.width, overlay.height);
+                overlay.style.display = 'none';
+            }
         }
     }
 

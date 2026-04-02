@@ -118,6 +118,10 @@ class CameraMonitor:
         self._preview_lock = threading.Lock()
         self._preview_jpeg = None
         self._last_capture_time = 0.0
+        self._latest_face_bbox = None
+        self._latest_frame_size = None
+        self._last_face_detect_time = 0.0
+        self._face_detect_interval = 0.35
 
         # 创建保存目录
         os.makedirs(save_dir, exist_ok=True)
@@ -366,9 +370,18 @@ class CameraMonitor:
                     time.sleep(0.25)
                     continue
 
+                now = time.time()
+                if (now - self._last_face_detect_time) >= self._face_detect_interval:
+                    latest_bbox = self._detect_face_bbox(frame)
+                    self._latest_face_bbox = latest_bbox
+                    self._latest_frame_size = {
+                        'width': int(frame.shape[1]),
+                        'height': int(frame.shape[0])
+                    }
+                    self._last_face_detect_time = now
+
                 self._set_preview_from_frame(frame)
 
-                now = time.time()
                 elapsed = now - self._last_capture_time
                 if elapsed < self.capture_interval:
                     time.sleep(min(0.05, max(0.02, self.capture_interval - elapsed)))
@@ -614,6 +627,9 @@ class CameraMonitor:
 
             with self._preview_lock:
                 self._preview_jpeg = None
+            self._latest_face_bbox = None
+            self._latest_frame_size = None
+            self._last_face_detect_time = 0.0
 
             print(f"📊 统计: 共抓拍 {self.total_captures} 张，成功分析 {self.successful_analyses} 张")
             return {"status": "stopped"}
@@ -639,16 +655,18 @@ class CameraMonitor:
             'save_dir': os.path.abspath(self.save_dir),
             'model_loaded': self.model is not None,
             'face_detection_method': self.face_detection_method,
+            'latest_face_bbox': self._latest_face_bbox,
+            'latest_frame_size': self._latest_frame_size,
             'camera_available': self.camera_available,
             'camera_opened': self.camera is not None and hasattr(self.camera, 'isOpened') and self.camera.isOpened()
         }
 
-    def _detect_face_region(self, frame):
+    def _detect_face_bbox(self, frame):
         """
-        检测人脸并返回用于后续处理的人脸区域
+        检测人脸并返回边框
 
         Returns:
-            tuple: (face_frame, face_bbox)
+            dict or None: {'x','y','width','height','confidence'}
         """
         frame_h, frame_w = frame.shape[:2]
 
@@ -701,15 +719,13 @@ class CameraMonitor:
                         x2 = min(frame_w, best_face['x2'] + pad)
                         y2 = min(frame_h, best_face['y2'] + pad)
 
-                        face_frame = frame[y1:y2, x1:x2]
-                        face_bbox = {
+                        return {
                             'x': int(x1),
                             'y': int(y1),
                             'width': int(x2 - x1),
                             'height': int(y2 - y1),
                             'confidence': float(best_face['score'])
                         }
-                        return face_frame, face_bbox
             except Exception as e:
                 print(f"⚠️ facenet 人脸检测异常，回退到 OpenCV: {e}")
 
@@ -726,20 +742,40 @@ class CameraMonitor:
                     x2 = min(frame_w, x + w + pad)
                     y2 = min(frame_h, y + h + pad)
 
-                    face_frame = frame[y1:y2, x1:x2]
-                    face_bbox = {
+                    return {
                         'x': int(x1),
                         'y': int(y1),
                         'width': int(x2 - x1),
                         'height': int(y2 - y1),
                         'confidence': 1.0
                     }
-                    return face_frame, face_bbox
             except Exception as e:
                 print(f"⚠️ OpenCV 人脸检测异常: {e}")
 
-        # 未检测到人脸，回退全图
-        return frame, None
+        return None
+
+    def _detect_face_region(self, frame):
+        """
+        检测人脸并返回用于后续处理的人脸区域
+
+        Returns:
+            tuple: (face_frame, face_bbox)
+        """
+        frame_h, frame_w = frame.shape[:2]
+        face_bbox = self._detect_face_bbox(frame)
+        if face_bbox is None:
+            return frame, None
+
+        x1 = max(0, int(face_bbox['x']))
+        y1 = max(0, int(face_bbox['y']))
+        x2 = min(frame_w, x1 + int(face_bbox['width']))
+        y2 = min(frame_h, y1 + int(face_bbox['height']))
+
+        if x2 <= x1 or y2 <= y1:
+            return frame, None
+
+        face_frame = frame[y1:y2, x1:x2]
+        return face_frame, face_bbox
 
     def analyze_history(self, days=None):
         """分析历史数据"""

@@ -44,6 +44,15 @@ except Exception as e:
     transforms = None
     TORCH_AVAILABLE = False
     print(f"⚠️ PyTorch 导入失败，进入降级模式: {e}")
+
+try:
+    from facenet import MTCNN
+    FACENET_AVAILABLE = True
+except Exception as e:
+    MTCNN = None
+    FACENET_AVAILABLE = False
+    print(f"⚠️ facenet MTCNN 不可用，将回退 OpenCV 人脸检测: {e}")
+
 from PIL import Image
 import io
 import base64
@@ -185,6 +194,9 @@ model = None
 device = None
 transform = None
 health_advisor = None
+single_image_face_detector = None
+single_image_face_cascade = None
+single_image_face_method = 'none'
 
 # EMOTION_LABELS = ['anger', 'disgust', 'fear', 'happy', 'sad', 'surprised']
 EMOTION_LABELS = ['surprised', 'fear', 'disgust', 'happy', 'sad', 'anger', 'neutral']
@@ -279,7 +291,121 @@ def initialize_model():
 
         transform = _noop_transform
     print("✅ 图像预处理器初始化完成")
+    initialize_single_image_face_detector()
     return model is not None
+
+
+def initialize_single_image_face_detector():
+    """初始化单图接口的人脸检测器（facenet 优先，OpenCV 回退）"""
+    global single_image_face_detector, single_image_face_cascade, single_image_face_method
+
+    single_image_face_detector = None
+    single_image_face_cascade = None
+    single_image_face_method = 'none'
+
+    if FACENET_AVAILABLE and TORCH_AVAILABLE and MTCNN is not None:
+        try:
+            detector_device = device if device is not None else 'cpu'
+            single_image_face_detector = MTCNN(keep_all=True, device=detector_device)
+            single_image_face_method = 'facenet_mtcnn'
+            print(f"✅ 单图人脸检测器已启用: {single_image_face_method}")
+            return
+        except Exception as e:
+            print(f"⚠️ 初始化单图 facenet MTCNN 失败: {e}")
+
+    if CV2_AVAILABLE:
+        try:
+            single_image_face_cascade = cv2.CascadeClassifier(
+                cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+            )
+            if single_image_face_cascade is not None and not single_image_face_cascade.empty():
+                single_image_face_method = 'opencv_haar'
+                print(f"✅ 单图人脸检测器已启用: {single_image_face_method}")
+            else:
+                single_image_face_cascade = None
+        except Exception as e:
+            print(f"⚠️ 初始化单图 OpenCV 人脸检测失败: {e}")
+
+
+def detect_face_for_single_image(image):
+    """
+    单图接口人脸检测（facenet 优先）
+
+    Returns:
+        tuple: (face_img, face_bbox, method)
+    """
+    img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    frame_h, frame_w = img_cv2.shape[:2]
+
+    if single_image_face_detector is not None:
+        try:
+            rgb = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2RGB)
+            boxes, probs = single_image_face_detector.detect(rgb)
+            if boxes is not None and len(boxes) > 0:
+                valid_boxes = []
+                for idx, box in enumerate(boxes):
+                    if box is None:
+                        continue
+                    x1, y1, x2, y2 = [int(v) for v in box]
+                    x1 = max(0, min(frame_w - 1, x1))
+                    y1 = max(0, min(frame_h - 1, y1))
+                    x2 = max(0, min(frame_w, x2))
+                    y2 = max(0, min(frame_h, y2))
+                    if x2 <= x1 or y2 <= y1:
+                        continue
+
+                    score = 0.0
+                    if probs is not None and idx < len(probs) and probs[idx] is not None:
+                        score = float(probs[idx])
+
+                    width = x2 - x1
+                    height = y2 - y1
+                    area = width * height
+                    valid_boxes.append((score, area, x1, y1, x2, y2))
+
+                if valid_boxes:
+                    _score, _area, x1, y1, x2, y2 = max(valid_boxes, key=lambda item: (item[0], item[1]))
+                    pad = int(max(x2 - x1, y2 - y1) * 0.12)
+                    x1 = max(0, x1 - pad)
+                    y1 = max(0, y1 - pad)
+                    x2 = min(frame_w, x2 + pad)
+                    y2 = min(frame_h, y2 + pad)
+                    bbox = {
+                        'x': int(x1),
+                        'y': int(y1),
+                        'width': int(x2 - x1),
+                        'height': int(y2 - y1),
+                        'confidence': float(_score)
+                    }
+                    face_img = image.crop((x1, y1, x2, y2))
+                    return face_img, bbox, 'facenet_mtcnn'
+        except Exception as e:
+            print(f"⚠️ 单图 facenet 检测失败，回退 OpenCV: {e}")
+
+    if single_image_face_cascade is not None:
+        try:
+            gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+            faces = single_image_face_cascade.detectMultiScale(gray, 1.1, 4)
+            if len(faces) > 0:
+                x, y, fw, fh = max(faces, key=lambda b: b[2] * b[3])
+                pad = int(max(fw, fh) * 0.12)
+                x1 = max(0, x - pad)
+                y1 = max(0, y - pad)
+                x2 = min(frame_w, x + fw + pad)
+                y2 = min(frame_h, y + fh + pad)
+                bbox = {
+                    'x': int(x1),
+                    'y': int(y1),
+                    'width': int(x2 - x1),
+                    'height': int(y2 - y1),
+                    'confidence': 1.0
+                }
+                face_img = image.crop((x1, y1, x2, y2))
+                return face_img, bbox, 'opencv_haar'
+        except Exception as e:
+            print(f"⚠️ 单图 OpenCV 人脸检测失败: {e}")
+
+    return image, None, single_image_face_method
 
 
 def initialize_health_advisor():
@@ -313,31 +439,22 @@ def predict_emotion(image):
     # 如果模型或 PyTorch 不可用，使用模拟结果返回，保证 API 在降级模式下也能工作
     if model is None or transforms is None or not TORCH_AVAILABLE:
         print("⚠️  使用降级预测：模型或 PyTorch 不可用，返回模拟结果")
-        return 'neutral', 0.0, {emo: (1.0 / len(EMOTION_LABELS)) for emo in EMOTION_LABELS}
+        face_img, face_bbox, face_method = detect_face_for_single_image(image)
+        return 'neutral', 0.0, {emo: (1.0 / len(EMOTION_LABELS)) for emo in EMOTION_LABELS}, face_bbox, face_method
 
     try:
-        # 1. 转换图像格式
-        img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        h, w = img_cv2.shape[:2]
-
-        # 2. 如果之前 MediaPipe 报错，我们这里直接用 OpenCV 的底层检测
-        # 为了兼容性，我们先尝试最稳的检测
-        gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-
-        if len(faces) > 0:
-            # 取面积最大的脸
-            (x, y, fw, fh) = max(faces, key=lambda b: b[2] * b[3])
-            # 扩大人脸框（让模型看全一点）
-            pad = int(fw * 0.2)
-            face_img = image.crop((max(0, x - pad), max(0, y - pad), min(w, x + fw + pad), min(h, y + fh + pad)))
-            print(f"✅ 成功定位人脸区域: {x},{y}")
+        # 1. 人脸检测（facenet 优先）
+        face_img, face_bbox, face_method = detect_face_for_single_image(image)
+        if face_bbox:
+            print(
+                f"✅ 单图定位人脸: x={face_bbox['x']}, y={face_bbox['y']}, "
+                f"w={face_bbox['width']}, h={face_bbox['height']}, "
+                f"method={face_method}"
+            )
         else:
-            face_img = image
-            print("⚠️ 未检测到人脸，使用全图")
+            print("⚠️ 单图未检测到人脸，使用全图")
 
-        # 3. 模型预测
+        # 2. 模型预测
         img_tensor = transform(face_img).unsqueeze(0).to(device)
         with torch.no_grad():
             outputs = model(img_tensor)
@@ -345,10 +462,10 @@ def predict_emotion(image):
             idx = torch.argmax(probs).item()
 
         return EMOTION_LABELS[idx], float(probs[idx]), {EMOTION_LABELS[i]: float(probs[i]) for i in
-                                                        range(len(EMOTION_LABELS))}
+                                                        range(len(EMOTION_LABELS))}, face_bbox, face_method
     except Exception as e:
         print(f"❌ 预测失败: {e}")
-        return 'neutral', 0.0, {}
+        return 'neutral', 0.0, {}, None, single_image_face_method
 
 # ================ 基础API端点 ================
 @app.route('/')
@@ -484,14 +601,17 @@ def predict():
             }), 400
 
         # 预测表情
-        emotion, confidence, probabilities = predict_emotion(image)
+        emotion, confidence, probabilities, face_bbox, face_detection_method = predict_emotion(image)
 
         # 构建情绪数据
         emotion_data = {
             'emotion': emotion,
             'emotion_zh': EMOTION_ZH.get(emotion, emotion),
             'confidence': float(confidence),
-            'probabilities': probabilities
+            'probabilities': probabilities,
+            'face_detected': face_bbox is not None,
+            'face_bbox': face_bbox,
+            'face_detection_method': face_detection_method
         }
 
         # 保存到数据库
@@ -513,6 +633,9 @@ def predict():
             'emotion_zh': EMOTION_ZH.get(emotion, emotion),
             'confidence': float(confidence),
             'probabilities': probabilities,
+            'face_detected': face_bbox is not None,
+            'face_bbox': face_bbox,
+            'face_detection_method': face_detection_method,
             'timestamp': datetime.now().isoformat(),
             'record_id': record_id,
             'user_id': user_id
@@ -582,7 +705,7 @@ def predict_with_advice():
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
         # 进行情绪预测
-        emotion, confidence, probabilities = predict_emotion(image)
+        emotion, confidence, probabilities, face_bbox, face_detection_method = predict_emotion(image)
 
         # 构建预测结果
         prediction_result = {
@@ -590,6 +713,9 @@ def predict_with_advice():
             'emotion_zh': EMOTION_ZH.get(emotion, emotion),
             'confidence': float(confidence),
             'probabilities': probabilities,
+            'face_detected': face_bbox is not None,
+            'face_bbox': face_bbox,
+            'face_detection_method': face_detection_method,
             'timestamp': datetime.now().isoformat()
         }
 
