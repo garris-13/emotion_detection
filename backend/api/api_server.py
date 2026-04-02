@@ -30,7 +30,7 @@ except ImportError as e:
     print("⚠️  摄像头功能将不可用")
 
 # ================ 继续其他导入 ================
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 
 # Torch may fail to import on some Windows setups (missing CUDA/VC++ runtime).
@@ -48,6 +48,7 @@ from PIL import Image
 import io
 import base64
 import json
+import re
 from datetime import datetime, timedelta
 import time
 import numpy as np
@@ -369,6 +370,10 @@ def home():
             'POST /monitor/pause': '暂停监测',
             'POST /monitor/resume': '继续监测',
             'POST /monitor/stop': '停止监测',
+            'GET /monitor/preview/stream': '监测进行中时 MJPEG 实时画面',
+            'GET /monitor/captures': '列出实时监测抓拍图片（含拍摄时间）',
+            'GET /monitor/captures/file/<filename>': '获取单张抓拍原图',
+            'GET /monitor/captures/result/<filename>': '获取某张抓拍对应的情绪识别 JSON',
             'GET /monitor/analyze': '分析历史数据'
         },
         'AI大模型分析': {
@@ -1626,6 +1631,7 @@ except Exception as e:
             self.successful_analyses = 0
             self.capture_interval = 5
             self.camera_index = 0
+            self.camera_available = False
 
             # 创建保存目录
             results_dir = os.path.join(save_dir, "results")
@@ -1661,6 +1667,9 @@ except Exception as e:
         def stop(self):
             self.is_monitoring = False
             return {"status": "stopped"}
+
+        def get_preview_jpeg(self):
+            return None
 
         def analyze_history(self):
             # 模拟分析历史数据
@@ -1737,6 +1746,45 @@ def get_monitor_status():
             'error': str(e),
             'timestamp': datetime.now().isoformat()
         }), 500
+
+
+@app.route('/monitor/preview/stream', methods=['GET'])
+def monitor_preview_stream():
+    """监测运行时推送 MJPEG，与 OpenCV 采集同源"""
+    if monitor is None:
+        return jsonify({'success': False, 'error': '监测器未初始化'}), 503
+    if not getattr(monitor, 'is_monitoring', False):
+        return jsonify({'success': False, 'error': '请先开始监测'}), 503
+    if not getattr(monitor, 'camera_available', False):
+        return jsonify({'success': False, 'error': '当前环境无可用摄像头预览（如虚拟监测模式）'}), 503
+
+    boundary = b'frame'
+
+    def generate():
+        idle_ticks = 0
+        while True:
+            m = monitor
+            if m is None or not getattr(m, 'is_monitoring', False):
+                break
+            jpg = m.get_preview_jpeg() if hasattr(m, 'get_preview_jpeg') else None
+            if jpg:
+                idle_ticks = 0
+                yield b'--' + boundary + b'\r\nContent-Type: image/jpeg\r\n\r\n' + jpg + b'\r\n'
+            else:
+                idle_ticks += 1
+                if idle_ticks > 250:
+                    break
+            time.sleep(0.04)
+
+    return Response(
+        generate(),
+        mimetype='multipart/x-mixed-replace; boundary=frame',
+        headers={
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'X-Accel-Buffering': 'no',
+        },
+    )
 
 
 @app.route('/monitor/start', methods=['POST'])
@@ -1880,12 +1928,205 @@ def stop_monitor():
         }), 500
 
 
+MONITOR_CAPTURE_RE = re.compile(
+    r'^capture_(\d{8})_(\d{6})(?:_(\d+))?\.(jpe?g|png)$',
+    re.IGNORECASE
+)
+
+
+def _monitor_images_base_dir():
+    """与 initialize_camera_monitor 一致的抓拍图片目录"""
+    return os.path.join(PROJECT_ROOT, "data", "monitor_results", "images")
+
+
+def _parse_capture_filename(filename):
+    """从文件名解析拍摄时间；无法解析则返回 None"""
+    m = MONITOR_CAPTURE_RE.match(filename)
+    if not m:
+        return None
+    date_s, time_s, ms_part, _ext = m.group(1), m.group(2), m.group(3), m.group(4)
+    try:
+        dt = datetime.strptime(f"{date_s}_{time_s}", "%Y%m%d_%H%M%S")
+        if ms_part:
+            micro = min(int(ms_part) * 1000, 999999)
+            dt = dt.replace(microsecond=micro)
+        return dt
+    except ValueError:
+        return None
+
+
+@app.route('/monitor/captures', methods=['GET'])
+def list_monitor_captures():
+    """列出实时监测保存的抓拍图片，按拍摄时间有序返回"""
+    try:
+        images_dir = _monitor_images_base_dir()
+        order = (request.args.get('order') or 'asc').lower()
+        if order not in ('asc', 'desc'):
+            order = 'asc'
+        limit = request.args.get('limit', 500, type=int)
+        if limit is None or limit < 1:
+            limit = 500
+        limit = min(limit, 2000)
+
+        if not os.path.isdir(images_dir):
+            return jsonify({
+                'success': True,
+                'captures': [],
+                'total': 0,
+                'images_dir': images_dir,
+                'timestamp': datetime.now().isoformat()
+            })
+
+        entries = []
+        for name in os.listdir(images_dir):
+            if not MONITOR_CAPTURE_RE.match(name):
+                continue
+            path = os.path.join(images_dir, name)
+            if not os.path.isfile(path):
+                continue
+            dt = _parse_capture_filename(name)
+            if dt is None:
+                try:
+                    dt = datetime.fromtimestamp(os.path.getmtime(path))
+                except OSError:
+                    continue
+            entries.append((dt, name, os.path.getmtime(path)))
+
+        entries.sort(key=lambda x: (x[0], x[2]), reverse=(order == 'desc'))
+
+        captures = []
+        for dt, name, _mtime in entries[:limit]:
+            captures.append({
+                'filename': name,
+                'url': f'/monitor/captures/file/{name}',
+                'captured_at': dt.isoformat(),
+                'captured_at_display': dt.strftime('%Y-%m-%d %H:%M:%S'),
+            })
+
+        return jsonify({
+            'success': True,
+            'captures': captures,
+            'total': len(entries),
+            'returned': len(captures),
+            'order': order,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"❌ 列出监测抓拍失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
+@app.route('/monitor/captures/file/<path:filename>', methods=['GET'])
+def serve_monitor_capture_file(filename):
+    """安全返回单张监测抓拍图"""
+    try:
+        safe = os.path.basename(filename)
+        if safe != filename or not MONITOR_CAPTURE_RE.match(safe):
+            return jsonify({'success': False, 'error': '无效的文件名'}), 400
+        images_dir = _monitor_images_base_dir()
+        fp = os.path.join(images_dir, safe)
+        if not os.path.isfile(fp):
+            return jsonify({'success': False, 'error': '文件不存在'}), 404
+        return send_from_directory(images_dir, safe, max_age=60)
+    except Exception as e:
+        print(f"❌ 读取抓拍文件失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
+def _monitor_results_dir():
+    return os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+
+
+def _load_monitor_result_for_image(safe_image_basename):
+    """
+    根据抓拍文件名加载对应的 result_*.json。
+    首选 result_<与 capture_ 相同时间戳>.json；不存在则在 results 目录中按 image_filename 匹配。
+    """
+    results_dir = _monitor_results_dir()
+    if not os.path.isdir(results_dir):
+        return None
+
+    stem = safe_image_basename.rsplit('.', 1)[0]
+    if not stem.startswith('capture_'):
+        return None
+    ts_key = stem[len('capture_'):]
+    result_path = os.path.join(results_dir, f"result_{ts_key}.json")
+    if os.path.isfile(result_path):
+        try:
+            with open(result_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"❌ 读取监测结果失败 {result_path}: {e}")
+            return None
+
+    for fn in os.listdir(results_dir):
+        if not fn.endswith('.json'):
+            continue
+        fp = os.path.join(results_dir, fn)
+        try:
+            with open(fp, 'r', encoding='utf-8') as f:
+                obj = json.load(f)
+            if obj.get('image_filename') == safe_image_basename:
+                return obj
+        except Exception:
+            continue
+    return None
+
+
+@app.route('/monitor/captures/result/<path:filename>', methods=['GET'])
+def get_monitor_capture_result(filename):
+    """返回某张监测抓拍对应的情绪识别结果（与保存的 result JSON 一致的核心字段）"""
+    try:
+        safe = os.path.basename(filename)
+        if safe != filename or not MONITOR_CAPTURE_RE.match(safe):
+            return jsonify({'success': False, 'error': '无效的图片文件名'}), 400
+
+        payload = _load_monitor_result_for_image(safe)
+        if not payload:
+            return jsonify({
+                'success': False,
+                'error': '未找到该照片的情绪识别结果',
+                'timestamp': datetime.now().isoformat()
+            }), 404
+
+        slim = {
+            'emotion': payload.get('emotion'),
+            'emotion_zh': payload.get('emotion_zh'),
+            'confidence': payload.get('confidence'),
+            'probabilities': payload.get('probabilities') or {},
+            'timestamp': payload.get('timestamp'),
+            'face_detected': payload.get('face_detected'),
+            'face_detection_method': payload.get('face_detection_method'),
+            'image_filename': payload.get('image_filename') or safe,
+        }
+        return jsonify({
+            'success': True,
+            'result': slim,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"❌ 获取抓拍识别结果失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
 @app.route('/monitor/analyze', methods=['GET'])
 def analyze_monitor_data():
     """分析监测历史数据"""
     try:
         # 如果没有监测器，尝试从保存的文件中分析
-        results_dir = os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+        results_dir = _monitor_results_dir()
         if not os.path.exists(results_dir):
             return jsonify({
                 'success': False,

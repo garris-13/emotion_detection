@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <base href="../">
@@ -358,6 +358,13 @@
         }
         .card-header h3 i {
             color: var(--primary);
+        }
+        .card-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
         /* Grid layouts */
@@ -813,6 +820,206 @@
             color: var(--text-secondary);
         }
 
+        .monitor-preview-card .monitor-preview-wrap {
+            background: #0f172a;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .monitor-preview-wrap #monitorPreviewImg {
+            width: 100%;
+            max-height: min(70vh, 560px);
+            object-fit: contain;
+            display: block;
+        }
+        .monitor-preview-wrap .empty-state {
+            color: #94a3b8;
+        }
+        .monitor-preview-wrap .empty-state i {
+            color: #64748b;
+        }
+
+        /* 监测抓拍画廊 */
+        .capture-meta {
+            font-size: .85rem;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+        .capture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 18px;
+        }
+        .capture-card {
+            background: var(--surface-alt);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .capture-card:hover {
+            box-shadow: var(--shadow);
+            border-color: var(--primary-light);
+        }
+        .capture-card a {
+            display: block;
+            outline: none;
+        }
+        .capture-card img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            display: block;
+        }
+        .capture-card .cap-time {
+            padding: 12px 14px;
+            font-size: .82rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        /* 抓拍详情弹层 */
+        .capture-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .capture-modal.open {
+            display: flex;
+        }
+        .capture-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
+        }
+        .capture-modal-panel {
+            position: relative;
+            z-index: 1;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            max-width: 920px;
+            width: 100%;
+            max-height: min(90vh, 880px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: fadeUp .28s ease-out;
+        }
+        .capture-modal-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .capture-modal-toolbar h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .capture-modal-close {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-xs);
+            background: var(--surface-alt);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        .capture-modal-close:hover {
+            background: var(--border);
+            color: var(--text);
+        }
+        .capture-modal-body {
+            display: grid;
+            grid-template-columns: minmax(200px, 1fr) minmax(240px, 1fr);
+            gap: 0;
+            overflow: auto;
+            flex: 1;
+            min-height: 0;
+        }
+        @media (max-width: 700px) {
+            .capture-modal-body { grid-template-columns: 1fr; }
+        }
+        .capture-modal-img-wrap {
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            min-height: 220px;
+        }
+        .capture-modal-img-wrap img {
+            max-width: 100%;
+            max-height: min(52vh, 480px);
+            object-fit: contain;
+            border-radius: var(--radius-xs);
+        }
+        .capture-modal-side {
+            padding: 20px;
+            overflow: auto;
+            border-left: 1px solid var(--border);
+        }
+        @media (max-width: 700px) {
+            .capture-modal-side { border-left: none; border-top: 1px solid var(--border); }
+        }
+        .capture-modal-meta {
+            font-size: .85rem;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+        .capture-modal-hero {
+            text-align: center;
+            padding: 12px 0 18px;
+        }
+        .capture-modal-hero .emoji {
+            font-size: 3rem;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        .capture-modal-hero .name {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .capture-modal-hero .conf {
+            font-size: .95rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+        .capture-modal-probs {
+            margin-top: 8px;
+        }
+        .capture-modal-foot {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            font-size: .85rem;
+        }
+
         /* Responsive */
         @media(max-width:768px) {
             .sidebar { display:none; }
@@ -873,6 +1080,9 @@
                 <div class="nav-label" style="margin-top:12px;">监测</div>
                 <div class="nav-item" data-tab="monitorTab">
                     <i class="fas fa-video"></i> 实时监测
+                </div>
+                <div class="nav-item" data-tab="monitorPhotosTab">
+                    <i class="fas fa-images"></i> 查看照片
                 </div>
                 <div class="nav-label" style="margin-top:12px;">AI 能力</div>
                 <div class="nav-item" data-tab="aiAnalysisTab">
@@ -1114,6 +1324,45 @@
                             </div>
                         </div>
                     </div>
+                    <div class="card monitor-preview-card" id="monitorPreviewCard" style="margin-top:24px;">
+                        <div class="card-header">
+                            <h3><i class="fas fa-eye"></i> 摄像头实时画面</h3>
+                            <span id="monitorPreviewBadge" class="risk-badge" style="display:none; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;">监测中</span>
+                        </div>
+                        <p style="color:var(--text-muted); font-size:.85rem; margin-bottom:14px;">
+                            画面由运行 API 的本机摄像头采集，与「开始监测」使用同一路视频流；未开始监测时不显示。
+                        </p>
+                        <div class="monitor-preview-wrap" id="monitorPreviewWrap">
+                            <div id="monitorPreviewPlaceholder" class="empty-state" style="padding:36px 20px;">
+                                <i class="fas fa-video-slash"></i>
+                                <p>点击「开始监测」后，此处将显示当前摄像头画面</p>
+                            </div>
+                            <img id="monitorPreviewImg" alt="监测实时画面" style="display:none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== Monitor captures gallery ====== -->
+                <div id="monitorPhotosTab" class="tab-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-images"></i> 查看照片</h3>
+                            <div class="card-header-actions">
+                                <select class="form-select" id="captureSortOrder" style="width:auto; min-width:168px;">
+                                    <option value="asc">时间升序（早 → 晚）</option>
+                                    <option value="desc">时间降序（晚 → 早）</option>
+                                </select>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="loadMonitorCaptures()">
+                                    <i class="fas fa-rotate"></i> 刷新
+                                </button>
+                            </div>
+                        </div>
+                        <p style="color:var(--text-muted); font-size:.9rem; margin-bottom:8px;">
+                            按拍摄时间有序展示实时监测保存的抓拍；点击照片可弹出查看情绪识别结果，也可在弹窗内打开原图。
+                        </p>
+                        <div id="monitorPhotosMeta" class="capture-meta"></div>
+                        <div id="monitorPhotosGrid" class="capture-grid"></div>
+                    </div>
                 </div>
 
                 <!-- ====== AI Analysis Tab ====== -->
@@ -1252,10 +1501,51 @@
     <!-- Toast -->
     <div class="toast" id="statusBar"></div>
 
+    <!-- 监测抓拍：情绪结果弹窗 -->
+    <div id="captureResultModal" class="capture-modal" aria-hidden="true">
+        <div class="capture-modal-backdrop" onclick="closeCaptureResultModal()"></div>
+        <div class="capture-modal-panel" role="dialog" aria-modal="true" aria-labelledby="captureModalTitle">
+            <div class="capture-modal-toolbar">
+                <h4 id="captureModalTitle"><i class="fas fa-brain" style="color:var(--primary);"></i> 情绪识别结果</h4>
+                <button type="button" class="capture-modal-close" onclick="closeCaptureResultModal()" title="关闭">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="capture-modal-body">
+                <div class="capture-modal-img-wrap">
+                    <img id="captureModalImg" src="" alt="">
+                </div>
+                <div class="capture-modal-side">
+                    <div id="captureModalMeta" class="capture-modal-meta"></div>
+                    <div id="captureModalLoading" class="empty-state" style="padding:32px 16px;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>加载识别结果...</p>
+                    </div>
+                    <div id="captureModalContent" style="display:none;">
+                        <div class="capture-modal-hero">
+                            <div class="emoji" id="captureModalEmoji">😐</div>
+                            <div class="name" id="captureModalEmotionZh">--</div>
+                            <div class="conf" id="captureModalConfidence">置信度: --</div>
+                        </div>
+                        <div id="captureModalProbs" class="capture-modal-probs"></div>
+                        <div id="captureModalFace" class="capture-modal-meta" style="margin-top:12px;"></div>
+                        <div class="capture-modal-foot">
+                            <a id="captureModalOpenTab" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+                                <i class="fas fa-up-right-from-square"></i> 新标签打开原图
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
     // ============ Global Variables ============
     let emotionChart = null;
     let monitorChart = null;
+    let captureModalEscHandler = null;
+    let monitorPreviewStreamOn = false;
     let currentImageData = null;
     let isConnected = false;
     let monitorInterval = null;
@@ -1277,7 +1567,7 @@
     // ============ Page Navigation ============
     const pageTitles = {
         uploadTab:'图像上传', emotionTab:'情绪分析', adviceTab:'健康建议',
-        monitorTab:'实时监测', aiAnalysisTab:'AI 大模型分析', chatTab:'AI 智能对话'
+        monitorTab:'实时监测', monitorPhotosTab:'查看照片', aiAnalysisTab:'AI 大模型分析', chatTab:'AI 智能对话'
     };
 
     document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
@@ -1288,6 +1578,7 @@
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             document.getElementById('pageTitle').textContent = pageTitles[tabId] || '';
+            if (tabId === 'monitorPhotosTab') loadMonitorCaptures();
         });
     });
 
@@ -1298,6 +1589,7 @@
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         document.getElementById('pageTitle').textContent = pageTitles[tabId] || '';
+        if (tabId === 'monitorPhotosTab') loadMonitorCaptures();
     }
 
     // ============ Init ============
@@ -1322,6 +1614,19 @@
         if (chatInput) chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendChatMessage(); });
         const welcomePassword = document.getElementById('welcomePassword');
         if (welcomePassword) welcomePassword.addEventListener('keypress', e => { if (e.key === 'Enter') handleWelcomeLogin(); });
+        const captureSortOrder = document.getElementById('captureSortOrder');
+        if (captureSortOrder) captureSortOrder.addEventListener('change', () => loadMonitorCaptures());
+        const photosGrid = document.getElementById('monitorPhotosGrid');
+        if (photosGrid) {
+            photosGrid.addEventListener('click', (e) => {
+                const card = e.target.closest('.capture-card');
+                if (!card || !photosGrid.contains(card)) return;
+                const fn = card.getAttribute('data-filename');
+                const rel = card.getAttribute('data-url');
+                const time = card.getAttribute('data-time') || '';
+                if (fn && rel) openCaptureResultModal(fn, `${API_BASE_URL}${rel}`, time);
+            });
+        }
     });
 
     function checkRequiredElements() {}
@@ -1739,15 +2044,35 @@
         const box = document.getElementById('monitorStatus');
         const startBtn = document.getElementById('startMonitorBtn');
         const stopBtn = document.getElementById('stopMonitorBtn');
+        const prevImg = document.getElementById('monitorPreviewImg');
+        const prevPh = document.getElementById('monitorPreviewPlaceholder');
+        const prevBadge = document.getElementById('monitorPreviewBadge');
         if (!box) return;
         if (status.is_monitoring) {
             startBtn.style.display='none'; stopBtn.style.display='inline-flex';
             box.className='monitor-status-box running';
             box.innerHTML=`<strong><i class="fas fa-circle-play"></i> 监测中</strong><div style="margin-top:6px; font-size:.85rem;">已抓拍: ${status.total_captures||0} 张 · 成功: ${status.successful_analyses||0} 张 · 间隔: ${status.capture_interval||5}s</div>`;
+            if (prevPh) prevPh.style.display = 'none';
+            if (prevImg) {
+                prevImg.style.display = 'block';
+                if (!monitorPreviewStreamOn) {
+                    monitorPreviewStreamOn = true;
+                    prevImg.src = `${API_BASE_URL}/monitor/preview/stream?_=${Date.now()}`;
+                }
+            }
+            if (prevBadge) prevBadge.style.display = 'inline-flex';
         } else {
             startBtn.style.display='inline-flex'; stopBtn.style.display='none';
             box.className='monitor-status-box stopped';
             box.innerHTML=`<i class="fas fa-circle-stop"></i> <strong>已停止</strong> · 总抓拍: ${status.total_captures||0} 张`;
+            monitorPreviewStreamOn = false;
+            if (prevImg) {
+                prevImg.src = '';
+                prevImg.removeAttribute('src');
+                prevImg.style.display = 'none';
+            }
+            if (prevPh) prevPh.style.display = 'block';
+            if (prevBadge) prevBadge.style.display = 'none';
         }
     }
 
@@ -1787,6 +2112,124 @@
                 }
             } else showStatus(`分析失败: ${result.error}`,'error');
         } catch(e) { showStatus(`分析失败: ${e.message}`,'error'); }
+    }
+
+    async function loadMonitorCaptures() {
+        const grid = document.getElementById('monitorPhotosGrid');
+        const meta = document.getElementById('monitorPhotosMeta');
+        if (!grid) return;
+        const orderSel = document.getElementById('captureSortOrder');
+        const order = orderSel ? orderSel.value : 'asc';
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-spinner fa-spin"></i><p>加载中...</p></div>';
+        if (meta) meta.textContent = '';
+        try {
+            const res = await fetch(`${API_BASE_URL}/monitor/captures?order=${encodeURIComponent(order)}&limit=500`);
+            const data = await res.json();
+            if (!data.success) {
+                grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-circle-exclamation"></i><p>${escapeHtml(data.error || '加载失败')}</p></div>`;
+                return;
+            }
+            const n = data.captures ? data.captures.length : 0;
+            const total = typeof data.total === 'number' ? data.total : n;
+            if (meta) {
+                meta.textContent = total
+                    ? `共 ${total} 张 · 本页展示 ${data.returned != null ? data.returned : n} 张`
+                    : '暂无抓拍照片。先在「实时监测」中开始监测即可自动保存。';
+            }
+            if (!n) {
+                grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-image"></i><p>还没有监测抓拍图</p></div>';
+                return;
+            }
+            grid.innerHTML = data.captures.map(c => {
+                const src = `${API_BASE_URL}${c.url}`;
+                const timeLabel = c.captured_at_display || c.captured_at || '';
+                return `<div class="capture-card" data-filename="${escapeHtml(c.filename)}" data-url="${escapeHtml(c.url)}" data-time="${escapeHtml(timeLabel)}"><div class="capture-card-preview"><img src="${src}" alt="${escapeHtml(timeLabel)}" loading="lazy"></div><div class="cap-time"><i class="fas fa-clock" style="opacity:.65;margin-right:6px;"></i>${escapeHtml(timeLabel)}</div></div>`;
+            }).join('');
+        } catch (e) {
+            grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-plug-circle-xmark"></i><p>${escapeHtml(e.message)}</p></div>`;
+        }
+    }
+
+    async function openCaptureResultModal(filename, imageUrl, timeLabel) {
+        const modal = document.getElementById('captureResultModal');
+        const img = document.getElementById('captureModalImg');
+        const loading = document.getElementById('captureModalLoading');
+        const content = document.getElementById('captureModalContent');
+        const meta = document.getElementById('captureModalMeta');
+        const link = document.getElementById('captureModalOpenTab');
+        if (!modal || !img || !loading || !content) return;
+
+        img.src = imageUrl;
+        img.alt = timeLabel || filename;
+        if (meta) meta.textContent = timeLabel ? `拍摄时间: ${timeLabel}` : '';
+        if (link) link.href = imageUrl;
+
+        loading.style.display = 'block';
+        loading.innerHTML = '<div class="empty-state" style="padding:32px 16px;"><i class="fas fa-spinner fa-spin"></i><p>加载识别结果...</p></div>';
+        content.style.display = 'none';
+
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+
+        if (captureModalEscHandler) document.removeEventListener('keydown', captureModalEscHandler);
+        captureModalEscHandler = (ev) => { if (ev.key === 'Escape') closeCaptureResultModal(); };
+        document.addEventListener('keydown', captureModalEscHandler);
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/monitor/captures/result/${encodeURIComponent(filename)}`);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '加载失败');
+
+            const r = data.result;
+            const emo = r.emotion || '';
+            const emojiEl = document.getElementById('captureModalEmoji');
+            const zhEl = document.getElementById('captureModalEmotionZh');
+            const confEl = document.getElementById('captureModalConfidence');
+            if (emojiEl) emojiEl.textContent = emotionIcons[emo] || '😐';
+            if (zhEl) zhEl.textContent = r.emotion_zh || emotionChinese[emo] || emo || '--';
+            const confPct = typeof r.confidence === 'number' ? (r.confidence * 100).toFixed(1) : '--';
+            if (confEl) confEl.textContent = `置信度: ${confPct}%`;
+
+            const probsEl = document.getElementById('captureModalProbs');
+            if (probsEl) {
+                probsEl.innerHTML = '';
+                const probs = r.probabilities || {};
+                Object.entries(probs).forEach(([eKey, p]) => {
+                    const pct = ((p || 0) * 100).toFixed(1);
+                    probsEl.innerHTML += `<div class="prob-item"><div class="label">${emotionIcons[eKey] || '😐'} ${emotionChinese[eKey] || eKey}</div><div class="prob-bar-bg"><div class="prob-bar" style="width:${pct}%; background:${emotionColors[eKey] || '#6366f1'};"></div></div><div class="value">${pct}%</div></div>`;
+                });
+            }
+
+            const faceEl = document.getElementById('captureModalFace');
+            if (faceEl) {
+                const fd = r.face_detected === true ? '已检测到人脸' : (r.face_detected === false ? '未检测到人脸' : '');
+                const meth = r.face_detection_method ? ` · ${r.face_detection_method}` : '';
+                faceEl.textContent = fd ? fd + meth : '';
+            }
+
+            if (meta) {
+                const parts = [];
+                if (timeLabel) parts.push(`拍摄时间: ${timeLabel}`);
+                if (r.timestamp) parts.push(`识别记录时间: ${r.timestamp}`);
+                meta.textContent = parts.join(' · ');
+            }
+
+            loading.style.display = 'none';
+            content.style.display = 'block';
+        } catch (err) {
+            loading.innerHTML = `<div class="empty-state" style="padding:32px 16px;"><i class="fas fa-circle-exclamation"></i><p>${escapeHtml(err.message)}</p></div>`;
+        }
+    }
+
+    function closeCaptureResultModal() {
+        const modal = document.getElementById('captureResultModal');
+        if (!modal) return;
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        if (captureModalEscHandler) {
+            document.removeEventListener('keydown', captureModalEscHandler);
+            captureModalEscHandler = null;
+        }
     }
 
     // ============ Drag & Drop ============

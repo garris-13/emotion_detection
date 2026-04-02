@@ -115,6 +115,9 @@ class CameraMonitor:
         self.successful_analyses = 0
         self.camera = None
         self.monitor_thread = None
+        self._preview_lock = threading.Lock()
+        self._preview_jpeg = None
+        self._last_capture_time = 0.0
 
         # 创建保存目录
         os.makedirs(save_dir, exist_ok=True)
@@ -300,6 +303,7 @@ class CameraMonitor:
 
             self.is_monitoring = True
             self.is_paused = False
+            self._last_capture_time = 0.0
 
             # 启动监测线程
             self.monitor_thread = threading.Thread(
@@ -320,25 +324,57 @@ class CameraMonitor:
                 self.camera = None
             return False
 
+    def _set_preview_from_frame(self, frame):
+        """将当前帧编码为 JPEG 供前端 MJPEG 预览（在监测线程内调用）"""
+        if not CV2_AVAILABLE or frame is None:
+            return
+        try:
+            h, w = frame.shape[:2]
+            scale = min(1.0, 640.0 / max(w, 1))
+            if scale < 1.0:
+                small = cv2.resize(frame, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+            else:
+                small = frame
+            ok, buf = cv2.imencode('.jpg', small, [int(cv2.IMWRITE_JPEG_QUALITY), 68])
+            if ok:
+                with self._preview_lock:
+                    self._preview_jpeg = buf.tobytes()
+        except Exception:
+            pass
+
+    def get_preview_jpeg(self):
+        """返回最近一次预览 JPEG 字节，若无则 None"""
+        with self._preview_lock:
+            return self._preview_jpeg
+
     def _monitoring_loop(self, camera_index):
-        """监测循环"""
+        """监测循环（持续刷新预览；按间隔抓拍与分析）"""
         print(f"🔍 监测循环开始 (摄像头: {camera_index}, 间隔: {self.capture_interval}s)")
 
         while self.is_monitoring:
             try:
-                current_time = time.time()
-
-                # 检查暂停状态
                 if self.is_paused:
-                    time.sleep(0.5)
+                    ret, frame = self.camera.read()
+                    if ret:
+                        self._set_preview_from_frame(frame)
+                    time.sleep(0.12)
                     continue
 
-                # 读取摄像头帧
                 ret, frame = self.camera.read()
                 if not ret:
                     print("⚠️  读取摄像头帧失败")
-                    time.sleep(1)
+                    time.sleep(0.25)
                     continue
+
+                self._set_preview_from_frame(frame)
+
+                now = time.time()
+                elapsed = now - self._last_capture_time
+                if elapsed < self.capture_interval:
+                    time.sleep(min(0.05, max(0.02, self.capture_interval - elapsed)))
+                    continue
+
+                self._last_capture_time = now
 
                 # 保存图像文件
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
@@ -371,9 +407,6 @@ class CameraMonitor:
 
                 except Exception as e:
                     print(f"❌ 保存图片异常: {e}")
-
-                # 等待指定的间隔时间
-                time.sleep(self.capture_interval)
 
             except Exception as e:
                 print(f"❌ 监测循环错误: {e}")
@@ -578,6 +611,9 @@ class CameraMonitor:
                 self.camera.release()
                 self.camera = None
                 print("✅ 摄像头已释放")
+
+            with self._preview_lock:
+                self._preview_jpeg = None
 
             print(f"📊 统计: 共抓拍 {self.total_captures} 张，成功分析 {self.successful_analyses} 张")
             return {"status": "stopped"}
