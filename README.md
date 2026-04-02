@@ -34,7 +34,7 @@
 * **后端服务**：Python Flask (RESTful API)
 * **核心算法**：
     * **模型**：ResNet50 / ResNet18 (PyTorch)
-    * **预处理**：OpenCV (Haar Cascade Face Detection)
+  * **预处理**：Facenet MTCNN 人脸检测（失败时回退 OpenCV Haar）
 * **大模型集成**：Alibaba DashScope (通义千问 / OpenAI Compatible SDK)
 
 ---

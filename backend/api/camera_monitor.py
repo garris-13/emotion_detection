@@ -11,8 +11,11 @@ import json
 from datetime import datetime
 import traceback
 
-# 添加项目根目录到路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# 添加后端目录和项目根目录到路径
+BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(BACKEND_ROOT)
+sys.path.append(BACKEND_ROOT)
+sys.path.append(PROJECT_ROOT)
 
 # ================ 检查 OpenCV ================
 try:
@@ -65,6 +68,15 @@ except Exception as e:
     transforms = None
     TORCH_AVAILABLE = False
     print(f"⚠️ camera_monitor: PyTorch 导入失败，摄像头监测相关功能将降级: {e}")
+
+# Facenet 人脸检测（可选）
+try:
+    from facenet import MTCNN
+    FACENET_AVAILABLE = True
+except Exception as e:
+    MTCNN = None
+    FACENET_AVAILABLE = False
+    print(f"⚠️ facenet MTCNN 导入失败，将回退到 OpenCV 人脸检测: {e}")
 
 
 class CameraMonitor:
@@ -137,6 +149,33 @@ class CameraMonitor:
             ])
         else:
             self.transform = None
+
+        # 初始化人脸检测器
+        self.face_detector = None
+        self.face_cascade = None
+        self.face_detection_method = 'none'
+
+        if FACENET_AVAILABLE and TORCH_AVAILABLE and MTCNN is not None:
+            try:
+                detector_device = self.device if self.device is not None else 'cpu'
+                self.face_detector = MTCNN(keep_all=True, device=detector_device)
+                self.face_detection_method = 'facenet_mtcnn'
+                print(f"✅ 人脸检测器已启用: {self.face_detection_method}")
+            except Exception as e:
+                print(f"⚠️ 初始化 facenet MTCNN 失败: {e}")
+
+        if self.face_detector is None and CV2_AVAILABLE:
+            try:
+                self.face_cascade = cv2.CascadeClassifier(
+                    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+                )
+                if self.face_cascade is not None and not self.face_cascade.empty():
+                    self.face_detection_method = 'opencv_haar'
+                    print(f"✅ 人脸检测器已启用: {self.face_detection_method}")
+                else:
+                    self.face_cascade = None
+            except Exception as e:
+                print(f"⚠️ 初始化 OpenCV Haar 人脸检测失败: {e}")
 
         # 情绪映射
         self.emotion_zh = {
@@ -353,14 +392,30 @@ class CameraMonitor:
         Returns:
             dict: 分析结果或None
         """
+        face_frame, face_bbox = self._detect_face_region(frame)
+
+        if face_bbox:
+            print(
+                f"🧩 检测到人脸框: x={face_bbox['x']}, y={face_bbox['y']}, "
+                f"w={face_bbox['width']}, h={face_bbox['height']}, "
+                f"score={face_bbox['confidence']:.3f}"
+            )
+        else:
+            print("⚠️  未检测到人脸，回退使用全图")
+
         if self.model is None:
             # 没有模型，生成模拟数据
             print("⚠️  使用模拟分析结果")
-            return self._simulate_analysis(frame, timestamp, image_filename)
+            result = self._simulate_analysis(face_frame, timestamp, image_filename)
+            if result is not None:
+                result['face_detected'] = face_bbox is not None
+                result['face_bbox'] = face_bbox
+                result['face_detection_method'] = self.face_detection_method
+            return result
 
         try:
             # 转换OpenCV BGR到RGB
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            rgb_frame = cv2.cvtColor(face_frame, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(rgb_frame)
 
             # 显示图像信息
@@ -390,7 +445,10 @@ class CameraMonitor:
                 'confidence': float(confidence),
                 'probabilities': prob_dict,
                 'image_filename': image_filename,
-                'image_path': f"images/{image_filename}"
+                'image_path': f"images/{image_filename}",
+                'face_detected': face_bbox is not None,
+                'face_bbox': face_bbox,
+                'face_detection_method': self.face_detection_method
             }
 
             return result
@@ -544,9 +602,108 @@ class CameraMonitor:
             'capture_interval': self.capture_interval,
             'save_dir': os.path.abspath(self.save_dir),
             'model_loaded': self.model is not None,
+            'face_detection_method': self.face_detection_method,
             'camera_available': self.camera_available,
             'camera_opened': self.camera is not None and hasattr(self.camera, 'isOpened') and self.camera.isOpened()
         }
+
+    def _detect_face_region(self, frame):
+        """
+        检测人脸并返回用于后续处理的人脸区域
+
+        Returns:
+            tuple: (face_frame, face_bbox)
+        """
+        frame_h, frame_w = frame.shape[:2]
+
+        # 优先使用 facenet MTCNN
+        if self.face_detector is not None:
+            try:
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                boxes, probs = self.face_detector.detect(rgb_frame)
+
+                if boxes is not None and len(boxes) > 0:
+                    valid_boxes = []
+                    for idx, box in enumerate(boxes):
+                        if box is None:
+                            continue
+
+                        x1, y1, x2, y2 = [int(v) for v in box]
+                        x1 = max(0, min(frame_w - 1, x1))
+                        y1 = max(0, min(frame_h - 1, y1))
+                        x2 = max(0, min(frame_w, x2))
+                        y2 = max(0, min(frame_h, y2))
+
+                        if x2 <= x1 or y2 <= y1:
+                            continue
+
+                        score = 0.0
+                        if probs is not None and idx < len(probs) and probs[idx] is not None:
+                            score = float(probs[idx])
+
+                        width = x2 - x1
+                        height = y2 - y1
+                        area = width * height
+
+                        valid_boxes.append({
+                            'x1': x1,
+                            'y1': y1,
+                            'x2': x2,
+                            'y2': y2,
+                            'width': width,
+                            'height': height,
+                            'area': area,
+                            'score': score
+                        })
+
+                    if valid_boxes:
+                        best_face = max(valid_boxes, key=lambda b: (b['score'], b['area']))
+                        pad = int(max(best_face['width'], best_face['height']) * 0.12)
+
+                        x1 = max(0, best_face['x1'] - pad)
+                        y1 = max(0, best_face['y1'] - pad)
+                        x2 = min(frame_w, best_face['x2'] + pad)
+                        y2 = min(frame_h, best_face['y2'] + pad)
+
+                        face_frame = frame[y1:y2, x1:x2]
+                        face_bbox = {
+                            'x': int(x1),
+                            'y': int(y1),
+                            'width': int(x2 - x1),
+                            'height': int(y2 - y1),
+                            'confidence': float(best_face['score'])
+                        }
+                        return face_frame, face_bbox
+            except Exception as e:
+                print(f"⚠️ facenet 人脸检测异常，回退到 OpenCV: {e}")
+
+        # 回退到 OpenCV Haar
+        if self.face_cascade is not None:
+            try:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
+                if len(faces) > 0:
+                    x, y, w, h = max(faces, key=lambda b: b[2] * b[3])
+                    pad = int(max(w, h) * 0.12)
+                    x1 = max(0, x - pad)
+                    y1 = max(0, y - pad)
+                    x2 = min(frame_w, x + w + pad)
+                    y2 = min(frame_h, y + h + pad)
+
+                    face_frame = frame[y1:y2, x1:x2]
+                    face_bbox = {
+                        'x': int(x1),
+                        'y': int(y1),
+                        'width': int(x2 - x1),
+                        'height': int(y2 - y1),
+                        'confidence': 1.0
+                    }
+                    return face_frame, face_bbox
+            except Exception as e:
+                print(f"⚠️ OpenCV 人脸检测异常: {e}")
+
+        # 未检测到人脸，回退全图
+        return frame, None
 
     def analyze_history(self, days=None):
         """分析历史数据"""
