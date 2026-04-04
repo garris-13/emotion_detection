@@ -128,6 +128,7 @@ conda activate emotiondetection
 (3) 安装依赖
 ```bash
 pip install -r backend/requirements.txt
+python -m pip install -e .\facenet
 ```
 
 （4）启动项目

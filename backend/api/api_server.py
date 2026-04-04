@@ -9,14 +9,20 @@ import os
 
 # ================ 修复路径和导入问题 ================
 
-# 获取项目根目录
+# 后端根目录与仓库根目录
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, PROJECT_ROOT)
+REPO_ROOT = os.path.dirname(PROJECT_ROOT)
+
+# 同时加入后端目录与仓库目录，避免不同启动方式下本地包导入失败
+for path in (PROJECT_ROOT, REPO_ROOT):
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
 print("=" * 70)
 print("🚀 表情识别与健康建议 API - AI大模型增强版")
 print("=" * 70)
 print(f"📁 项目根目录: {PROJECT_ROOT}")
+print(f"📁 仓库根目录: {REPO_ROOT}")
 
 # ================ 检查 OpenCV ================
 try:
@@ -48,10 +54,18 @@ except Exception as e:
 try:
     from facenet import MTCNN
     FACENET_AVAILABLE = True
-except Exception as e:
-    MTCNN = None
-    FACENET_AVAILABLE = False
-    print(f"⚠️ facenet MTCNN 不可用，将回退 OpenCV 人脸检测: {e}")
+    FACENET_SOURCE = 'facenet'
+except Exception as e1:
+    try:
+        from facenet_pytorch import MTCNN
+        FACENET_AVAILABLE = True
+        FACENET_SOURCE = 'facenet_pytorch'
+    except Exception as e2:
+        MTCNN = None
+        FACENET_AVAILABLE = False
+        FACENET_SOURCE = None
+        print(f"⚠️ facenet MTCNN 不可用，将回退 OpenCV 人脸检测: {e1}")
+        print(f"⚠️ facenet_pytorch MTCNN 也不可用: {e2}")
 
 from PIL import Image
 import io
