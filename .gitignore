@@ -12,3 +12,5 @@ data/monitor_results/
 .venv/
 
 backend/data
+
+.env
