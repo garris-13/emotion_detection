@@ -191,9 +191,13 @@ class USBCameraMonitor:
                 image_filename = f"capture_{timestamp}.jpg"
                 image_path = os.path.join(self.save_dir, "images", image_filename)
 
-                # 保存图像文件
+                # 保存图像文件（使用 imencode + 手动写文件，避免 OpenCV 不支持中文路径的问题）
                 try:
-                    success = cv2.imwrite(image_path, frame)
+                    ret, buf = cv2.imencode('.jpg', frame)
+                    if ret:
+                        with open(image_path, 'wb') as f:
+                            f.write(buf.tobytes())
+                    success = ret
                     if success:
                         self.total_captures += 1
                         print(f"📸 保存第 {self.total_captures} 张图片")

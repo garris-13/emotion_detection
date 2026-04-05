@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <base href="../">
@@ -699,6 +699,264 @@
         }
         .llm-response strong { color: var(--text); }
 
+        /* Markdown tables */
+        .llm-response table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: .88rem;
+        }
+        .llm-response th, .llm-response td {
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .llm-response th {
+            background: rgba(99,102,241,.06);
+            font-weight: 600;
+            color: var(--text);
+        }
+        .llm-response tr:nth-child(even) td {
+            background: rgba(0,0,0,.015);
+        }
+        .llm-response hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 18px 0;
+        }
+
+        /* Streaming cursor */
+        .streaming-cursor::after {
+            content: '▌';
+            animation: blink 0.7s step-end infinite;
+            color: var(--primary);
+            font-weight: bold;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Agent progress bar */
+        .agent-progress {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: var(--surface-alt);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            font-size: .85rem;
+        }
+        .agent-step {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(0,0,0,.04);
+            color: var(--text-muted);
+            transition: all .3s ease;
+            white-space: nowrap;
+        }
+        .agent-step.active {
+            background: rgba(99,102,241,.12);
+            color: var(--primary);
+            font-weight: 600;
+            box-shadow: 0 0 0 2px rgba(99,102,241,.2);
+        }
+        .agent-step.done {
+            background: rgba(16,185,129,.1);
+            color: var(--success);
+        }
+        .agent-step .spinner-sm {
+            width: 14px; height: 14px;
+            border: 2px solid rgba(99,102,241,.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+        }
+        .agent-step-arrow {
+            color: var(--text-muted);
+            font-size: .75rem;
+        }
+        /* Agent interim text (shown then removed) */
+        .agent-interim {
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            background: rgba(99,102,241,.04);
+            border-left: 3px solid var(--primary-light);
+            border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+            font-size: .82rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+            max-height: 120px;
+            overflow-y: auto;
+            transition: opacity .5s ease;
+        }
+        .agent-interim.fading { opacity: 0; }
+
+        /* ====== Image Picker Modal ====== */
+        .img-picker-overlay {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(0,0,0,.55);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+        }
+        .img-picker-dialog {
+            background: var(--surface);
+            border-radius: var(--radius);
+            width: 100%; max-width: 900px;
+            max-height: 90vh;
+            display: flex; flex-direction: column;
+            box-shadow: 0 24px 64px rgba(0,0,0,.28);
+            overflow: hidden;
+        }
+        .img-picker-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700; font-size: 1rem;
+        }
+        .img-picker-header button {
+            background: none; border: none; cursor: pointer;
+            font-size: 1.1rem; color: var(--text-muted);
+            line-height: 1; padding: 4px 8px; border-radius: 6px;
+        }
+        .img-picker-header button:hover { background: var(--surface-alt); }
+        .img-picker-toolbar {
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 22px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-alt);
+            font-size: .86rem;
+        }
+        .picker-sel-badge {
+            margin-left: auto;
+            padding: 3px 12px;
+            background: rgba(99,102,241,.1);
+            color: var(--primary);
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .img-picker-body {
+            flex: 1; overflow-y: auto; padding: 18px 22px;
+        }
+        /* 5-minute group */
+        .picker-group { margin-bottom: 24px; }
+        .picker-group-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px;
+            background: rgba(99,102,241,.06);
+            border-radius: var(--radius-xs);
+            margin-bottom: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .picker-group-header:hover { background: rgba(99,102,241,.1); }
+        .picker-group-header .group-check {
+            width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);
+        }
+        .picker-group-header .group-label {
+            font-weight: 600; font-size: .88rem; color: var(--text);
+            flex: 1;
+        }
+        .picker-group-header .group-count {
+            font-size: .8rem; color: var(--text-muted);
+        }
+        /* Image grid inside a group */
+        .picker-img-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        .picker-img-item {
+            position: relative; border-radius: 8px; overflow: hidden;
+            border: 2px solid transparent;
+            cursor: pointer; user-select: none;
+            transition: border-color .15s, transform .1s;
+            background: var(--surface-alt);
+            aspect-ratio: 4/3;
+        }
+        .picker-img-item:hover { transform: scale(1.03); }
+        .picker-img-item.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,.2);
+        }
+        .picker-img-item img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .picker-img-no-img {
+            width: 100%; height: 100%; display: flex; align-items: center;
+            justify-content: center; color: var(--text-muted); font-size: 1.5rem;
+        }
+        .picker-img-check {
+            position: absolute; top: 5px; left: 5px;
+            width: 20px; height: 20px;
+            background: white; border-radius: 50%;
+            border: 2px solid rgba(0,0,0,.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .7rem; color: var(--primary); font-weight: 700;
+            transition: background .15s, border-color .15s;
+        }
+        .picker-img-item.selected .picker-img-check {
+            background: var(--primary); border-color: var(--primary); color: white;
+        }
+        .picker-img-badge {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 4px 6px;
+            background: linear-gradient(to top, rgba(0,0,0,.65), transparent);
+            color: white; font-size: .7rem; font-weight: 600;
+            text-align: center;
+        }
+        .picker-img-time {
+            position: absolute; top: 5px; right: 5px;
+            background: rgba(0,0,0,.5);
+            color: white; font-size: .62rem;
+            padding: 2px 5px; border-radius: 4px;
+        }
+        .img-picker-footer {
+            display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+            padding: 14px 22px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ====== Charts Grid ====== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 16px;
+            margin-top: 12px;
+        }
+        @media (max-width: 900px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+        .chart-card {
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+        }
+        .chart-title {
+            font-weight: 600; font-size: .88rem;
+            margin-bottom: 12px; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: .5px;
+        }
+        .chart-wrap { position: relative; }
+
+        /* Selected badge in toolbar */
+        .sel-count-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            background: rgba(16,185,129,.1);
+            color: var(--success);
+            font-size: .84rem; font-weight: 600;
+            cursor: pointer;
+        }
+        .sel-count-badge.empty {
+            background: var(--surface-alt);
+            color: var(--text-muted);
+        }
+
         /* Server info for troubleshooting */
         .server-info-grid {
             display: grid;
@@ -1380,83 +1638,75 @@
                 <div id="aiAnalysisTab" class="tab-panel">
                     <div class="card">
                         <div class="card-header">
-                            <h3><i class="fas fa-robot"></i> AI 大模型分析</h3>
-                            <span class="risk-badge" id="modelTag" style="background:rgba(99,102,241,.1); color:var(--primary);">qwen-plus</span>
+                            <h3><i class="fas fa-brain"></i> AI 综合分析报告</h3>
+                            <span class="risk-badge" id="modelTag" style="background:rgba(16,185,129,.1); color:var(--success);"><i class="fas fa-users"></i> multiAgent</span>
                         </div>
-                        <div class="ai-subtabs">
-                            <button class="ai-subtab-btn active" onclick="switchAiSubPage('aiGeneralPage', event)">
-                                <i class="fas fa-chart-mixed"></i> 综合分析
+
+                        <!-- Toolbar -->
+                        <div class="analysis-toolbar" style="flex-wrap:wrap; align-items:center;">
+                            <button class="btn btn-outline btn-sm" id="openPickerBtn" onclick="openImagePicker()">
+                                <i class="fas fa-images"></i> 选择时间范围
                             </button>
-                            <button class="ai-subtab-btn" onclick="switchAiSubPage('aiMarkdownPage', event)">
-                                <i class="fas fa-file-lines"></i> Markdown 报告
+                            <span class="sel-count-badge empty" id="selectedCountBadge" onclick="openImagePicker()" title="点击重新选择">
+                                <i class="fas fa-circle-dot"></i> 未选择图片
+                            </span>
+                            <button class="btn btn-outline btn-sm" id="copyReportBtn" onclick="copyMarkdownReport()" disabled style="margin-left:auto;">
+                                <i class="fas fa-copy"></i> 复制报告
+                            </button>
+                            <button class="btn btn-primary btn-sm" id="startAnalysisBtn" onclick="runMultiAgentAnalysis()" disabled>
+                                <i class="fas fa-play-circle"></i> 开始综合分析
                             </button>
                         </div>
-                        <div id="aiGeneralPage" class="ai-subpage active">
-                            <div class="analysis-toolbar">
-                                <button class="btn btn-primary btn-sm" onclick="getComprehensiveAnalysis('health_advice')" id="healthAdviceBtn">
-                                    <i class="fas fa-heartbeat"></i> 健康建议
-                                </button>
-                                <button class="btn btn-accent btn-sm" onclick="getComprehensiveAnalysis('monitor_analysis')" id="monitorAnalysisBtn">
-                                    <i class="fas fa-chart-line"></i> 监测分析
-                                </button>
-                                <button class="btn btn-success btn-sm" onclick="getDetailedReportByMultiAgent()" id="detailedReportBtn">
-                                    <i class="fas fa-file-medical-alt"></i> 详细报告
-                                </button>
-                                <div class="days-field">
-                                    <label>天数</label>
-                                    <input type="number" class="form-input" id="llmAnalysisDays" min="1" max="365" value="7">
+
+                        <!-- Stats bar -->
+                        <div id="llmAnalysisStats" style="display:none; margin-bottom:16px;">
+                            <div class="grid-4">
+                                <div class="stat-card">
+                                    <div class="stat-value" id="llmTotalSamples">0</div>
+                                    <div class="stat-label">样本数</div>
                                 </div>
-                            </div>
-                            <div id="aiAnalysisContent">
-                                <div class="empty-state">
-                                    <i class="fas fa-robot"></i>
-                                    <p>选择分析类型以生成 AI 报告</p>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="llmAnalysisType">多智能体</div>
+                                    <div class="stat-label">分析类型</div>
                                 </div>
-                            </div>
-                            <div id="llmAnalysisStats" style="display:none; margin-top:20px;">
-                                <div class="grid-4">
-                                    <div class="stat-card">
-                                        <div class="stat-value" id="llmTotalSamples">0</div>
-                                        <div class="stat-label">样本数</div>
-                                    </div>
-                                    <div class="stat-card">
-                                        <div class="stat-value" id="llmAnalysisType">--</div>
-                                        <div class="stat-label">分析类型</div>
-                                    </div>
-                                    <div class="stat-card">
-                                        <div class="stat-value" id="llmTimeRange">--</div>
-                                        <div class="stat-label">时间范围</div>
-                                    </div>
-                                    <div class="stat-card">
-                                        <div class="stat-value" id="llmStability">0%</div>
-                                        <div class="stat-label">稳定性</div>
-                                    </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="llmTimeRange">--</div>
+                                    <div class="stat-label">时间范围</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="llmStability">--</div>
+                                    <div class="stat-label">情绪稳定性</div>
                                 </div>
                             </div>
                         </div>
-                        <div id="aiMarkdownPage" class="ai-subpage">
-                            <div class="analysis-toolbar">
-                                <button class="btn btn-primary btn-sm" id="markdownGenerateBtn" onclick="generateMarkdownReport()">
-                                    <i class="fas fa-file-pen"></i> 生成报告
-                                </button>
-                                <button class="btn btn-outline btn-sm" id="markdownCopyBtn" onclick="copyMarkdownReport()" disabled>
-                                    <i class="fas fa-copy"></i> 复制 Markdown
-                                </button>
-                                <div class="days-field">
-                                    <label>天数</label>
-                                    <input type="number" class="form-input" id="markdownDays" min="1" max="365" value="7">
-                                </div>
+
+                        <!-- Main report content -->
+                        <div id="aiAnalysisContent">
+                            <div class="empty-state">
+                                <i class="fas fa-images"></i>
+                                <p>请先点击"选择时间范围"选择要分析的图片，再开始综合分析</p>
                             </div>
-                            <div id="markdownReportContent">
-                                <div class="empty-state">
-                                    <i class="fas fa-file-lines"></i>
-                                    <p>点击"生成报告"调用 multiAgent 生成 Markdown</p>
-                                </div>
+                        </div>
+
+                        <!-- Charts section (shown after report) -->
+                        <div id="aiChartsSection" style="display:none; margin-top:32px;">
+                            <div style="display:flex; align-items:center; gap:8px; padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:16px;">
+                                <i class="fas fa-chart-bar" style="color:var(--primary);"></i>
+                                <strong style="font-size:1rem;">数据可视化</strong>
                             </div>
-                            <div id="markdownReportMeta" class="markdown-meta" style="display:none;">
-                                <span id="markdownSampleCount">样本: 0</span>
-                                <span>|</span>
-                                <span id="markdownOutputFile">文件: -</span>
+                            <div class="charts-grid">
+                                <div class="chart-card">
+                                    <div class="chart-title">📊 情绪分布</div>
+                                    <div class="chart-wrap"><canvas id="reportPieChart"></canvas></div>
+                                </div>
+                                <div class="chart-card">
+                                    <div class="chart-title">📈 情绪时间线</div>
+                                    <div class="chart-wrap"><canvas id="reportTimelineChart"></canvas></div>
+                                </div>
+                                <div class="chart-card">
+                                    <div class="chart-title">🎯 置信度分布</div>
+                                    <div class="chart-wrap"><canvas id="reportConfChart"></canvas></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1792,158 +2042,352 @@
         finally { btn.innerHTML = orig; btn.disabled = false; }
     }
 
-    // ============ Comprehensive ============
-    async function analyzeComprehensiveWithLLM() {
-        if (!confirm('即将进行综合分析，是否继续？')) return;
-        const btn = document.getElementById('comprehensiveAnalyzeBtn');
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner"></span> 分析中...';
-        btn.disabled = true;
-        try {
-            await getComprehensiveAnalysis('health_advice');
-            switchTab('aiAnalysisTab');
-        } catch(e) { showStatus(`综合分析失败: ${e.message}`, 'error'); }
-        finally { btn.innerHTML = orig; btn.disabled = false; }
+    // ============ AI 综合分析 (Image Picker + Multi-Agent) ============
+    // State
+    let selectedImageFiles = [];    // result JSON filenames selected by user
+    let selectedImageStats = [];    // full image item objects for chart rendering
+    let latestMarkdownReport = '';  // for copy button
+    let _reportCharts = {};         // Chart.js instances to destroy on re-render
+    let _allPickerItems = [];       // all items loaded in picker
+    let _pickerSelected = new Set(); // currently selected result_file names in picker
+
+    // Redirect from health tab "综合分析" button
+    function analyzeComprehensiveWithLLM() {
+        switchTab('aiAnalysisTab');
+        if (selectedImageFiles.length === 0) openImagePicker();
+        else runMultiAgentAnalysis();
     }
 
-    async function getComprehensiveAnalysis(analysisType) {
-        const days = parseInt(document.getElementById('llmAnalysisDays').value)||7;
-        const userContext = {
-            age_group: document.getElementById('ageGroup').value,
-            stress_level: document.getElementById('stressLevel').value,
-            has_support_system: document.getElementById('hasSupport').value === 'true',
-            is_first_time: document.getElementById('isFirstTime').value === 'true'
-        };
-        const healthAdviceBtn = document.getElementById('healthAdviceBtn');
-        const monitorAnalysisBtn = document.getElementById('monitorAnalysisBtn');
-        const detailedReportBtn = document.getElementById('detailedReportBtn');
-        if (!healthAdviceBtn||!monitorAnalysisBtn||!detailedReportBtn) return;
-        const origTexts = {h:healthAdviceBtn.innerHTML, m:monitorAnalysisBtn.innerHTML, d:detailedReportBtn.innerHTML};
-        let currentBtn = analysisType==='health_advice'?healthAdviceBtn: analysisType==='monitor_analysis'?monitorAnalysisBtn : detailedReportBtn;
-        [healthAdviceBtn,monitorAnalysisBtn,detailedReportBtn].forEach(b=>b.disabled=true);
-        currentBtn.innerHTML = '<span class="spinner"></span> 分析中...';
+    // ===== IMAGE PICKER =====
+    async function openImagePicker() {
+        const modal = document.getElementById('imagePickerModal');
+        if (!modal) return;
+        modal.style.display = 'flex';
+        const hintEl = document.getElementById('pickerLoadingHint');
+        if (hintEl) hintEl.textContent = '加载中...';
+        document.getElementById('pickerBody').innerHTML = '<div style="padding:60px; text-align:center; color:var(--text-muted);"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top:12px;">正在加载图片...</p></div>';
+        _updatePickerBadges();
         try {
-            const isMulti = analysisType === 'detailed_report';
-            const endpoint = isMulti ? '/multi_agent_analysis' : '/comprehensive_analysis';
-            const requestBody = isMulti ? {days, user_context:userContext} : {use_history:true, analysis_type:analysisType, days, user_context:userContext};
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(requestBody), timeout:300000});
-            if (!response.ok) { const t = await response.text(); throw new Error(`${response.status} - ${t}`); }
-            const result = await response.json();
-            if (result.success) { displayLLMAnalysis(result, analysisType); showStatus(`${getAnalysisTypeName(analysisType)}完成`,'success'); }
-            else throw new Error(result.error||'分析失败');
-        } catch(error) {
-            showStatus(`${getAnalysisTypeName(analysisType)}失败: ${error.message}`, 'error');
-            document.getElementById('aiAnalysisContent').innerHTML = `<div style="padding:32px; text-align:center; background:#fef2f2; border-radius:var(--radius-sm); color:var(--danger);"><i class="fas fa-triangle-exclamation fa-2x" style="margin-bottom:12px;"></i><p style="font-weight:600;">分析失败</p><p style="margin-top:4px;">${escapeHtml(error.message)}</p></div>`;
-        } finally {
-            healthAdviceBtn.innerHTML=origTexts.h; monitorAnalysisBtn.innerHTML=origTexts.m; detailedReportBtn.innerHTML=origTexts.d;
-            [healthAdviceBtn,monitorAnalysisBtn,detailedReportBtn].forEach(b=>b.disabled=false);
+            const res = await fetch(`${API_BASE_URL}/monitor/captures_with_emotions`);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '加载失败');
+            _allPickerItems = data.items || [];
+            if (hintEl) hintEl.textContent = `共 ${_allPickerItems.length} 张`;
+            renderPickerGroups(groupImagesBy5Min(_allPickerItems));
+        } catch(err) {
+            document.getElementById('pickerBody').innerHTML = `<div style="padding:40px; text-align:center; color:var(--danger);"><i class="fas fa-triangle-exclamation fa-2x"></i><p style="margin-top:12px;">加载失败: ${escapeHtml(err.message)}</p></div>`;
+            if (hintEl) hintEl.textContent = '加载失败';
         }
     }
 
-    function displayLLMAnalysis(result, analysisType) {
+    function groupImagesBy5Min(items) {
+        const groups = new Map();
+        for (const item of items) {
+            const dt = new Date(item.timestamp);
+            const mins5 = Math.floor(dt.getMinutes() / 5) * 5;
+            const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(mins5).padStart(2,'0')}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(item);
+        }
+        return groups;
+    }
+
+    function renderPickerGroups(groups) {
+        const body = document.getElementById('pickerBody');
+        if (groups.size === 0) {
+            body.innerHTML = '<div style="padding:60px; text-align:center; color:var(--text-muted);"><i class="fas fa-image fa-2x"></i><p style="margin-top:12px;">暂无拍摄记录</p></div>';
+            return;
+        }
+        let html = '';
+        for (const [key, items] of groups) {
+            const allSel = items.every(it => _pickerSelected.has(it.result_file));
+            const someSel = items.some(it => _pickerSelected.has(it.result_file));
+            const checkAttr = allSel ? 'checked' : '';
+            const indetermAttr = (someSel && !allSel) ? 'data-indeterminate="1"' : '';
+            const escapedKey = key.replace(/"/g, '&quot;');
+            html += `<div class="picker-group" data-group="${escapedKey}">
+                <div class="picker-group-header" onclick="toggleGroupSelect('${escapedKey}')">
+                    <input type="checkbox" class="picker-group-check" ${checkAttr} ${indetermAttr} onclick="event.stopPropagation();toggleGroupSelect('${escapedKey}')" />
+                    <span class="picker-group-time"><i class="fas fa-clock"></i> ${key}</span>
+                    <span class="picker-group-count">${items.length} 张</span>
+                </div>
+                <div class="picker-img-grid">`;
+            for (const item of items) {
+                const sel = _pickerSelected.has(item.result_file) ? 'selected' : '';
+                const emo = item.emotion_zh || item.emotion || '未知';
+                const icon = emotionIcons[item.emotion] || '😐';
+                const pct = item.confidence ? (item.confidence * 100).toFixed(0) : '?';
+                const timeStr = item.timestamp ? item.timestamp.substring(11, 19) : '';
+                const imgUrl = item.image_url || '';
+                const escapedRf = item.result_file.replace(/'/g, "\\'");
+                html += `<div class="picker-img-item ${sel}" onclick="toggleImageSelect('${escapedRf}')" data-result="${escapeHtml(item.result_file)}">
+                    <div class="picker-img-check">✓</div>
+                    ${imgUrl
+                        ? `<img src="${API_BASE_URL}${imgUrl}" alt="capture" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy"><div class="picker-no-img" style="display:none; position:absolute; inset:0; background:var(--bg-secondary); align-items:center; justify-content:center; font-size:2rem; border-radius:var(--radius-xs);">📷</div>`
+                        : `<div class="picker-no-img" style="display:flex; position:absolute; inset:0; background:var(--bg-secondary); align-items:center; justify-content:center; font-size:2rem; border-radius:var(--radius-xs);">📷</div>`
+                    }
+                    <div class="picker-img-time">${timeStr}</div>
+                    <div class="picker-img-badge">${icon} ${emo} ${pct}%</div>
+                </div>`;
+            }
+            html += '</div></div>';
+        }
+        body.innerHTML = html;
+        body.querySelectorAll('[data-indeterminate="1"]').forEach(cb => { cb.indeterminate = true; });
+    }
+
+    function _updatePickerBadges() {
+        const n = _pickerSelected.size;
+        const badge = document.getElementById('pickerCountBadge');
+        const confirm = document.getElementById('pickerConfirmCount');
+        if (badge) badge.textContent = `已选 ${n} 张`;
+        if (confirm) confirm.textContent = n;
+    }
+
+    function toggleImageSelect(resultFile) {
+        if (_pickerSelected.has(resultFile)) _pickerSelected.delete(resultFile);
+        else _pickerSelected.add(resultFile);
+        const el = document.querySelector(`.picker-img-item[data-result="${CSS.escape(resultFile)}"]`);
+        if (el) el.classList.toggle('selected', _pickerSelected.has(resultFile));
+        // Update group header checkbox
+        const group = el ? el.closest('.picker-group') : null;
+        if (group) {
+            const gKey = group.dataset.group;
+            const gItems = _allPickerItems.filter(it => {
+                const dt = new Date(it.timestamp);
+                const m5 = Math.floor(dt.getMinutes() / 5) * 5;
+                return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(m5).padStart(2,'0')}` === gKey;
+            });
+            const allS = gItems.every(it => _pickerSelected.has(it.result_file));
+            const someS = gItems.some(it => _pickerSelected.has(it.result_file));
+            const cb = group.querySelector('.picker-group-check');
+            if (cb) { cb.checked = allS; cb.indeterminate = someS && !allS; }
+        }
+        _updatePickerBadges();
+    }
+
+    function toggleGroupSelect(groupKey) {
+        const items = _allPickerItems.filter(it => {
+            const dt = new Date(it.timestamp);
+            const m5 = Math.floor(dt.getMinutes() / 5) * 5;
+            return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(m5).padStart(2,'0')}` === groupKey;
+        });
+        const allSel = items.every(it => _pickerSelected.has(it.result_file));
+        items.forEach(it => { if (allSel) _pickerSelected.delete(it.result_file); else _pickerSelected.add(it.result_file); });
+        const group = document.querySelector(`.picker-group[data-group="${groupKey.replace(/"/g,'&quot;')}"]`);
+        if (group) {
+            const newState = !allSel;
+            group.querySelectorAll('.picker-img-item').forEach(el => el.classList.toggle('selected', newState));
+            const cb = group.querySelector('.picker-group-check');
+            if (cb) { cb.checked = newState; cb.indeterminate = false; }
+        }
+        _updatePickerBadges();
+    }
+
+    function pickerSelectAll() {
+        _allPickerItems.forEach(it => _pickerSelected.add(it.result_file));
+        document.querySelectorAll('.picker-img-item').forEach(el => el.classList.add('selected'));
+        document.querySelectorAll('.picker-group-check').forEach(cb => { cb.checked = true; cb.indeterminate = false; });
+        _updatePickerBadges();
+    }
+
+    function pickerDeselectAll() {
+        _pickerSelected.clear();
+        document.querySelectorAll('.picker-img-item').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('.picker-group-check').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+        _updatePickerBadges();
+    }
+
+    function confirmImageSelection() {
+        selectedImageFiles = Array.from(_pickerSelected);
+        selectedImageStats = _allPickerItems.filter(it => _pickerSelected.has(it.result_file));
+        closeImagePicker();
+        const badge = document.getElementById('selectedCountBadge');
+        const startBtn = document.getElementById('startAnalysisBtn');
+        if (badge) {
+            if (selectedImageFiles.length > 0) { badge.textContent = `已选 ${selectedImageFiles.length} 张图片`; badge.classList.remove('empty'); }
+            else { badge.textContent = '未选择图片'; badge.classList.add('empty'); }
+        }
+        if (startBtn) startBtn.disabled = (selectedImageFiles.length === 0);
+        showStatus(selectedImageFiles.length > 0 ? `已选择 ${selectedImageFiles.length} 张图片` : '已取消选择', 'info');
+    }
+
+    function closeImagePicker() {
+        const modal = document.getElementById('imagePickerModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function pickerOverlayClick(event) {
+        if (event.target === document.getElementById('imagePickerModal')) closeImagePicker();
+    }
+
+    // ===== MAIN ANALYSIS =====
+    async function runMultiAgentAnalysis() {
+        if (selectedImageFiles.length === 0) { showStatus('请先选择图片', 'warning'); openImagePicker(); return; }
+        const startBtn = document.getElementById('startAnalysisBtn');
+        const copyBtn = document.getElementById('copyReportBtn');
         const content = document.getElementById('aiAnalysisContent');
-        const stats = document.getElementById('llmAnalysisStats');
-        const modelTag = document.getElementById('modelTag');
         if (!content) return;
-        const isMulti = analysisType === 'detailed_report' && typeof result.report_markdown === 'string';
-        if (isMulti) {
-            const rendered = renderSimpleMarkdown(result.report_markdown);
-            updateLLMStats(result, '多智能体报告', '--');
-            if (modelTag) { modelTag.style.background='rgba(16,185,129,.1)'; modelTag.style.color='var(--success)'; modelTag.innerHTML='<i class="fas fa-users"></i> multiAgent'; }
-            content.innerHTML = `<div class="llm-response">${rendered}</div>`;
-            return;
-        }
-        if (analysisType==='detailed_report') {
-            content.innerHTML = `<div style="padding:20px; background:#fffbeb; border-radius:var(--radius-sm); color:#92400e;"><strong>详细报告应由多智能体生成</strong><br>请刷新后重试。</div>`;
-            return;
-        }
-        const analysis = result.analysis||{};
-        const llmAdvice = result.llm_advice;
-        const isAlgo = !llmAdvice;
-        updateLLMStats(result, getAnalysisTypeName(analysisType), `${analysis.stability_score?.toFixed(1)||0}%`);
-        if (modelTag) {
-            if (isAlgo) { modelTag.style.background='rgba(239,68,68,.1)'; modelTag.style.color='var(--danger)'; modelTag.innerHTML='<i class="fas fa-calculator"></i> 算法'; }
-            else { modelTag.style.background='rgba(99,102,241,.1)'; modelTag.style.color='var(--primary)'; modelTag.textContent='qwen-plus'; }
-        }
-        let displayContent = '';
-        if (llmAdvice && typeof llmAdvice==='string' && llmAdvice.trim()) {
-            displayContent = renderSimpleMarkdown(llmAdvice);
-        } else {
-            displayContent = buildAlgoHTML(analysis, analysisType, result.total_samples||0);
-        }
-        let note = isAlgo ? '<div style="padding:10px 14px; background:#fffbeb; border-radius:var(--radius-xs); margin-bottom:16px; font-size:.85rem; color:#92400e;"><i class="fas fa-info-circle"></i> 此报告由算法生成（大模型暂不可用）</div>' : '';
-        content.innerHTML = `${note}<div class="llm-response">${displayContent}</div><div style="margin-top:20px;">${generateEmotionDistributionHTML(analysis.emotion_distribution||{}, result.total_samples||1)}</div>`;
-    }
+        startBtn.disabled = true;
+        startBtn.innerHTML = '<span class="spinner"></span> 分析中...';
+        if (copyBtn) copyBtn.disabled = true;
+        document.getElementById('aiChartsSection').style.display = 'none';
 
-    function updateLLMStats(result, typeName, stability) {
-        const s = document.getElementById('llmAnalysisStats');
-        if (s) s.style.display='block';
-        const a = result.analysis||{};
-        const el = id => document.getElementById(id);
-        if (el('llmTotalSamples')) el('llmTotalSamples').textContent = result.total_samples||0;
-        if (el('llmAnalysisType')) el('llmAnalysisType').textContent = typeName;
-        if (el('llmTimeRange')) {
-            const tr = a.time_range||{};
-            el('llmTimeRange').textContent = `${(tr.start||'?').substring(0,10)} ~ ${(tr.end||'?').substring(0,10)}`;
-        }
-        if (el('llmStability')) el('llmStability').textContent = stability;
-    }
+        const agentSteps = [
+            {step:1, name:'数据分析师', icon:'🔍'},
+            {step:2, name:'心理评估师', icon:'💬'},
+            {step:3, name:'行动规划师', icon:'🎯'},
+            {step:4, name:'报告主编', icon:'📝'}
+        ];
+        const progressHtml = '<div class="agent-progress" id="agentProgress">' +
+            agentSteps.map((a,i) =>
+                `<span class="agent-step" id="agentStep${a.step}">${a.icon} ${a.name}</span>` +
+                (i < agentSteps.length-1 ? '<span class="agent-step-arrow">→</span>' : '')
+            ).join('') + '</div>';
 
-    function buildAlgoHTML(analysis, type, total) {
-        const d = analysis.dominant_emotion||{};
-        if (type==='health_advice') return `<h2>健康建议报告</h2><p><strong>主要情绪:</strong> ${d.emotion_zh||'未知'} (${(d.percentage||0).toFixed(1)}%)</p><p><strong>稳定性:</strong> ${(analysis.stability_score||0).toFixed(1)}%</p><h3>健康洞察</h3><ul>${(analysis.health_insights||[]).map(i=>`<li>${i}</li>`).join('')}</ul>`;
-        if (type==='monitor_analysis') return `<h2>监测分析报告</h2><p><strong>主要情绪:</strong> ${d.emotion_zh||'未知'} (${(d.percentage||0).toFixed(1)}%)</p><p><strong>样本:</strong> ${total}</p>`;
-        return '<p>分析结果已生成。</p>';
-    }
+        content.innerHTML = progressHtml +
+            '<div id="agentInterim" class="agent-interim" style="display:none;"></div>' +
+            '<div class="llm-response streaming-cursor" id="streamContent" style="display:none;"></div>';
 
-    function getAnalysisTypeName(t) { return {health_advice:'健康建议', monitor_analysis:'监测分析', detailed_report:'详细报告'}[t]||t; }
+        const interimEl = document.getElementById('agentInterim');
+        const streamEl = document.getElementById('streamContent');
+        let finalReport = '';
+        const userContext = { age_group: 'adult', stress_level: 'medium', has_support_system: true, is_first_time: false };
 
-    // ============ MultiAgent ============
-    async function getDetailedReportByMultiAgent() {
-        const days = parseInt(document.getElementById('llmAnalysisDays').value)||7;
-        const uc = { age_group:document.getElementById('ageGroup').value, stress_level:document.getElementById('stressLevel').value, has_support_system:document.getElementById('hasSupport').value==='true', is_first_time:document.getElementById('isFirstTime').value==='true' };
-        const btns = [document.getElementById('healthAdviceBtn'), document.getElementById('monitorAnalysisBtn'), document.getElementById('detailedReportBtn')];
-        const origTexts = btns.map(b=>b.innerHTML);
-        btns.forEach(b=>b.disabled=true);
-        btns[2].innerHTML='<span class="spinner"></span> 生成中...';
+        const modelTag = document.getElementById('modelTag');
+        if (modelTag) { modelTag.style.background='rgba(16,185,129,.1)'; modelTag.style.color='var(--success)'; modelTag.innerHTML='<i class="fas fa-users"></i> multiAgent'; }
+
+        const params = new URLSearchParams({ days: 30, selected_files: JSON.stringify(selectedImageFiles), user_context: JSON.stringify(userContext) });
+
         try {
-            const res = await fetch(`${API_BASE_URL}/multi_agent_analysis`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({days, user_context:uc})});
-            if (!res.ok) { const t = await res.text(); throw new Error(`${res.status} - ${t}`); }
-            const result = await res.json();
-            if (!result.success) throw new Error(result.error||'生成失败');
-            displayLLMAnalysis(result, 'detailed_report');
-            showStatus('详细报告生成完成','success');
-        } catch(e) {
-            showStatus(`详细报告失败: ${e.message}`, 'error');
-            document.getElementById('aiAnalysisContent').innerHTML = `<div style="padding:32px; text-align:center; background:#fef2f2; border-radius:var(--radius-sm); color:var(--danger);"><i class="fas fa-triangle-exclamation fa-2x" style="margin-bottom:12px;"></i><p style="font-weight:600;">生成失败</p><p>${escapeHtml(e.message)}</p></div>`;
-        } finally { btns.forEach((b,i)=>{b.innerHTML=origTexts[i]; b.disabled=false;}); }
-    }
+            await new Promise((resolve, reject) => {
+                const es = new EventSource(`${API_BASE_URL}/multi_agent_analysis_stream?${params}`);
+                es.onmessage = function(event) {
+                    if (event.data === '[DONE]') { es.close(); resolve(); return; }
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === 'meta') {
+                            document.getElementById('llmTotalSamples').textContent = selectedImageFiles.length;
+                            document.getElementById('llmAnalysisType').textContent = '多智能体';
+                            document.getElementById('llmAnalysisStats').style.display = 'block';
+                        }
+                        else if (msg.type === 'agent_start') {
+                            const stepEl = document.getElementById(`agentStep${msg.step}`);
+                            if (stepEl) { stepEl.classList.add('active'); stepEl.innerHTML = `<span class="spinner-sm"></span> ${msg.icon} ${msg.name}`; }
+                            if (msg.step < 4) {
+                                interimEl.style.display = 'block';
+                                interimEl.innerHTML = `<strong>${msg.icon} ${msg.name}正在分析...</strong><br>`;
+                                streamEl.style.display = 'none';
+                            } else {
+                                interimEl.classList.add('fading');
+                                setTimeout(() => { interimEl.style.display = 'none'; interimEl.classList.remove('fading'); }, 400);
+                                streamEl.style.display = 'block';
+                                streamEl.innerHTML = '';
+                            }
+                        }
+                        else if (msg.type === 'token') {
+                            if (msg.step < 4) { interimEl.innerHTML += msg.content.replace(/\n/g,'<br>'); interimEl.scrollTop = interimEl.scrollHeight; }
+                            else { finalReport += msg.content; streamEl.innerHTML = renderSimpleMarkdown(finalReport); }
+                        }
+                        else if (msg.type === 'agent_end') {
+                            const stepEl = document.getElementById(`agentStep${msg.step}`);
+                            const info = agentSteps.find(a=>a.step===msg.step);
+                            if (stepEl) { stepEl.classList.remove('active'); stepEl.classList.add('done'); stepEl.innerHTML = `✅ ${info?.name||''}`; }
+                        }
+                        else if (msg.type === 'complete') { latestMarkdownReport = finalReport; }
+                        else if (msg.type === 'error') { es.close(); reject(new Error(msg.error)); }
+                    } catch(parseErr) {}
+                };
+                es.onerror = function() { es.close(); if (!finalReport) reject(new Error('SSE 连接失败')); else resolve(); };
+            });
 
-    // ============ AI Sub Pages ============
-    let latestMarkdownReport = '';
-    function switchAiSubPage(pageId, eventObj) {
-        document.querySelectorAll('.ai-subtab-btn').forEach(b=>b.classList.remove('active'));
-        document.querySelectorAll('.ai-subpage').forEach(p=>p.classList.remove('active'));
-        if (eventObj && eventObj.currentTarget) eventObj.currentTarget.classList.add('active');
-        const el = document.getElementById(pageId);
-        if (el) el.classList.add('active');
-    }
+            streamEl.classList.remove('streaming-cursor');
+            interimEl.style.display = 'none';
+            content.innerHTML = '<div class="agent-progress">' +
+                agentSteps.map((a,i) =>
+                    `<span class="agent-step done">✅ ${a.name}</span>` +
+                    (i < agentSteps.length-1 ? '<span class="agent-step-arrow">→</span>' : '')
+                ).join('') +
+                `</div><div class="llm-response">${renderSimpleMarkdown(finalReport)}</div>`;
 
-    function escapeHtml(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-
-    function renderSimpleMarkdown(md) {
-        let html = escapeHtml(md||'');
-        html = html.replace(/^###\s+(.*)$/gm,'<h3>$1</h3>').replace(/^##\s+(.*)$/gm,'<h2>$1</h2>').replace(/^#\s+(.*)$/gm,'<h1>$1</h1>')
-            .replace(/^&gt;\s+(.*)$/gm,'<blockquote>$1</blockquote>')
-            .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>')
-            .replace(/`([^`]+)`/g,'<code>$1</code>');
-        const lines = html.split('\n'); let inList=false; const out=[];
-        for (const line of lines) {
-            if (/^\s*[-*]\s+/.test(line)) { if(!inList){out.push('<ul>'); inList=true;} out.push(`<li>${line.replace(/^\s*[-*]\s+/,'')}</li>`); }
-            else { if(inList){out.push('</ul>'); inList=false;} if(line.trim()) { if(/^<h[1-3]>|^<blockquote>|^<ul>|^<\/ul>|^<li>/.test(line.trim())) out.push(line); else out.push(`<p>${line}</p>`); } }
+            // Update stats
+            if (selectedImageStats.length > 0) {
+                const times = selectedImageStats.map(it => it.timestamp).sort();
+                const t0 = times[0].substring(0,10), t1 = times[times.length-1].substring(0,10);
+                document.getElementById('llmTimeRange').textContent = t0 === t1 ? t0 : `${t0} ~ ${t1}`;
+                const stableEmotions = new Set(['happy','neutral','calm','surprised']);
+                const stableCount = selectedImageStats.filter(it => stableEmotions.has(it.emotion)).length;
+                const stability = (stableCount / selectedImageStats.length * 100).toFixed(0);
+                document.getElementById('llmStability').textContent = `${stability}%`;
+            }
+            if (copyBtn) copyBtn.disabled = false;
+            renderAnalysisCharts(selectedImageStats);
+            showStatus('综合分析完成', 'success');
+        } catch(err) {
+            content.innerHTML = `<div style="padding:32px; text-align:center; background:#fef2f2; border-radius:var(--radius-sm); color:var(--danger);"><i class="fas fa-triangle-exclamation fa-2x" style="margin-bottom:12px;"></i><p style="font-weight:600;">分析失败</p><p>${escapeHtml(err.message)}</p></div>`;
+            showStatus(`分析失败: ${err.message}`, 'error');
+        } finally {
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-play-circle"></i> 开始综合分析';
         }
-        if (inList) out.push('</ul>');
-        return out.join('');
+    }
+
+    // ===== CHARTS =====
+    function renderAnalysisCharts(items) {
+        if (!items || items.length === 0) return;
+        const section = document.getElementById('aiChartsSection');
+        if (!section) return;
+        // Destroy old charts
+        ['pie','timeline','conf'].forEach(k => { if (_reportCharts[k]) { try { _reportCharts[k].destroy(); } catch(e){} _reportCharts[k] = null; } });
+
+        // 1. Emotion distribution doughnut
+        const emotionCounts = {};
+        items.forEach(it => { emotionCounts[it.emotion] = (emotionCounts[it.emotion]||0) + 1; });
+        const pieLabels = Object.keys(emotionCounts).map(e => emotionChinese[e] || e);
+        const pieData = Object.values(emotionCounts);
+        const pieColors = Object.keys(emotionCounts).map(e => emotionColors[e] || '#6366f1');
+        const pieCtx = document.getElementById('reportPieChart')?.getContext('2d');
+        if (pieCtx) {
+            _reportCharts.pie = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors, borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)' }] },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { font:{size:11}, padding:8 } }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} 次 (${(ctx.parsed/items.length*100).toFixed(1)}%)` } } } }
+            });
+        }
+
+        // 2. Emotion timeline bar chart (one bar per capture, colored by emotion, y=confidence)
+        const sorted = [...items].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+        const timelineCtx = document.getElementById('reportTimelineChart')?.getContext('2d');
+        if (timelineCtx) {
+            _reportCharts.timeline = new Chart(timelineCtx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(it => it.timestamp.substring(11,16)),
+                    datasets: [{ label: '置信度', data: sorted.map(it => +(it.confidence||0).toFixed(3)), backgroundColor: sorted.map(it => emotionColors[it.emotion]||'#6366f1'), borderRadius: 3, borderSkipped: false }]
+                },
+                options: { responsive: true, maintainAspectRatio: true, scales: { x: { ticks: { maxRotation: 60, font:{size:9} }, grid:{display:false} }, y: { min:0, max:1, ticks: { callback: v => (v*100).toFixed(0)+'%', font:{size:10} }, title: { display:true, text:'置信度' } } }, plugins: { legend:{display:false}, tooltip: { callbacks: { title: ctx => sorted[ctx[0].dataIndex]?.timestamp?.substring(0,19)||'', label: ctx => { const it=sorted[ctx.dataIndex]; return ` ${emotionIcons[it?.emotion]||'😐'} ${emotionChinese[it?.emotion]||it?.emotion}: ${(ctx.parsed.y*100).toFixed(1)}%`; } } } } }
+            });
+        }
+
+        // 3. Confidence distribution buckets bar chart
+        const buckets = {'<60%':0, '60-70%':0, '70-80%':0, '80-90%':0, '≥90%':0};
+        items.forEach(it => {
+            const c = it.confidence||0;
+            if (c < 0.6) buckets['<60%']++;
+            else if (c < 0.7) buckets['60-70%']++;
+            else if (c < 0.8) buckets['70-80%']++;
+            else if (c < 0.9) buckets['80-90%']++;
+            else buckets['≥90%']++;
+        });
+        const confCtx = document.getElementById('reportConfChart')?.getContext('2d');
+        if (confCtx) {
+            _reportCharts.conf = new Chart(confCtx, {
+                type: 'bar',
+                data: { labels: Object.keys(buckets), datasets: [{ label: '图片数', data: Object.values(buckets), backgroundColor: ['#f87171','#fb923c','#fbbf24','#34d399','#4ade80'], borderRadius: 6 }] },
+                options: { responsive: true, maintainAspectRatio: true, scales: { x: { grid:{display:false} }, y: { beginAtZero:true, ticks:{stepSize:1, font:{size:10}}, title:{display:true, text:'图片数'} } }, plugins: { legend:{display:false} } }
+            });
+        }
+        section.style.display = 'block';
     }
 
     function copyMarkdownReport() {
@@ -1951,33 +2395,58 @@
         navigator.clipboard.writeText(latestMarkdownReport).then(()=>showStatus('已复制到剪贴板','success')).catch(()=>showStatus('复制失败','error'));
     }
 
-    async function generateMarkdownReport() {
-        const btn = document.getElementById('markdownGenerateBtn');
-        const copyBtn = document.getElementById('markdownCopyBtn');
-        const contentEl = document.getElementById('markdownReportContent');
-        const days = parseInt(document.getElementById('markdownDays').value)||7;
-        const uc = { age_group:document.getElementById('ageGroup').value, stress_level:document.getElementById('stressLevel').value, has_support_system:document.getElementById('hasSupport').value==='true', is_first_time:document.getElementById('isFirstTime').value==='true' };
-        const orig = btn.innerHTML;
-        btn.disabled=true; btn.innerHTML='<span class="spinner"></span> 生成中...';
-        if (copyBtn) copyBtn.disabled=true;
-        contentEl.innerHTML = '<div class="empty-state"><i class="fas fa-robot fa-spin"></i><p>正在调用 multiAgent 生成报告...</p></div>';
-        try {
-            const res = await fetch(`${API_BASE_URL}/multi_agent_analysis`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({days, user_context:uc})});
-            if (!res.ok) { const t=await res.text(); throw new Error(`${res.status} - ${t}`); }
-            const result = await res.json();
-            if (!result.success) throw new Error(result.error||'生成失败');
-            latestMarkdownReport = result.report_markdown||'';
-            contentEl.innerHTML = `<div class="llm-response">${renderSimpleMarkdown(latestMarkdownReport)}</div>`;
-            const sEl=document.getElementById('markdownSampleCount'), fEl=document.getElementById('markdownOutputFile'), mEl=document.getElementById('markdownReportMeta');
-            if (sEl) sEl.textContent=`样本: ${result.total_samples||0}`;
-            if (fEl) fEl.textContent=`文件: ${result.output_file||'-'}`;
-            if (mEl) mEl.style.display='flex';
-            if (copyBtn) copyBtn.disabled=!latestMarkdownReport;
-            showStatus('Markdown 报告生成完成','success');
-        } catch(e) {
-            contentEl.innerHTML = `<div style="padding:24px; background:#fef2f2; border-radius:var(--radius-sm); color:var(--danger);"><strong>生成失败</strong><p>${escapeHtml(e.message)}</p></div>`;
-            showStatus(`报告失败: ${e.message}`,'error');
-        } finally { btn.disabled=false; btn.innerHTML=orig; }
+    // ============ MultiAgent (legacy stub) ============
+    async function getDetailedReportByMultiAgent() { runMultiAgentAnalysis(); }
+
+    // ============ AI Sub Pages (stub for compatibility) ============
+    function switchAiSubPage() {}
+
+    function escapeHtml(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+
+    function renderSimpleMarkdown(md) {
+        let html = escapeHtml(md||'');
+        html = html.replace(/^---+$/gm, '<hr>');
+        html = html.replace(/^###\s+(.*)$/gm,'<h3>$1</h3>').replace(/^##\s+(.*)$/gm,'<h2>$1</h2>').replace(/^#\s+(.*)$/gm,'<h1>$1</h1>');
+        html = html.replace(/^&gt;\s+(.*)$/gm,'<blockquote>$1</blockquote>');
+        html = html.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+        html = html.replace(/`([^`]+)`/g,'<code>$1</code>');
+        const lines = html.split('\n');
+        let inList = false, inOl = false, inTable = false;
+        const out = [];
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+            if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+                if (/^\|[\s\-:|]+\|$/.test(trimmed)) continue;
+                const cells = trimmed.slice(1,-1).split('|').map(c=>c.trim());
+                const nextLine = (i+1<lines.length)?lines[i+1].trim():'';
+                const isHeader = /^\|[\s\-:|]+\|$/.test(nextLine);
+                if (!inTable) { out.push('<table>'); inTable=true; }
+                if (isHeader) { out.push('<thead><tr>'+cells.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>'); }
+                else { out.push('<tr>'+cells.map(c=>`<td>${c}</td>`).join('')+'</tr>'); }
+                continue;
+            } else if (inTable) { out.push('</tbody></table>'); inTable=false; }
+            if (/^\s*[-*]\s+/.test(line)) {
+                if (inOl) { out.push('</ol>'); inOl=false; }
+                if (!inList) { out.push('<ul>'); inList=true; }
+                out.push(`<li>${line.replace(/^\s*[-*]\s+/,'')}</li>`);
+                continue;
+            } else if (inList) { out.push('</ul>'); inList=false; }
+            if (/^\s*\d+\.\s+/.test(line)) {
+                if (inList) { out.push('</ul>'); inList=false; }
+                if (!inOl) { out.push('<ol>'); inOl=true; }
+                out.push(`<li>${line.replace(/^\s*\d+\.\s+/,'')}</li>`);
+                continue;
+            } else if (inOl) { out.push('</ol>'); inOl=false; }
+            if (trimmed) {
+                if (/^<h[1-3]>|^<blockquote>|^<hr>|^<ul>|^<\/ul>|^<ol>|^<\/ol>|^<li>|^<table>/.test(trimmed)) out.push(line);
+                else out.push(`<p>${line}</p>`);
+            }
+        }
+        if (inList) out.push('</ul>');
+        if (inOl) out.push('</ol>');
+        if (inTable) out.push('</tbody></table>');
+        return out.join('');
     }
 
     function generateEmotionDistributionHTML(dist, total) {
@@ -2487,5 +2956,30 @@
         } catch(e) { showStatus('发送失败','error'); }
     }
     </script>
+
+    <!-- ====== Image Picker Modal ====== -->
+    <div id="imagePickerModal" class="img-picker-overlay" style="display:none;" onclick="pickerOverlayClick(event)">
+        <div class="img-picker-dialog" onclick="event.stopPropagation()">
+            <div class="img-picker-header">
+                <span><i class="fas fa-images" style="color:var(--primary); margin-right:8px;"></i>选择分析图片</span>
+                <button onclick="closeImagePicker()" title="关闭">✕</button>
+            </div>
+            <div class="img-picker-toolbar">
+                <button class="btn btn-outline btn-sm" onclick="pickerSelectAll()"><i class="fas fa-check-double"></i> 全选</button>
+                <button class="btn btn-outline btn-sm" onclick="pickerDeselectAll()"><i class="fas fa-xmark"></i> 全不选</button>
+                <span id="pickerLoadingHint" style="font-size:.82rem; color:var(--text-muted); margin-left:4px;"></span>
+                <span class="picker-sel-badge" id="pickerCountBadge">已选 0 张</span>
+            </div>
+            <div class="img-picker-body" id="pickerBody">
+                <div class="empty-state"><i class="fas fa-camera fa-spin"></i><p>加载图片中...</p></div>
+            </div>
+            <div class="img-picker-footer">
+                <button class="btn btn-outline" onclick="closeImagePicker()">取消</button>
+                <button class="btn btn-primary" onclick="confirmImageSelection()">
+                    确认选择 <span id="pickerConfirmCount">0</span> 张
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

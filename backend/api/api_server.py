@@ -103,7 +103,7 @@ DATABASE_AVAILABLE = False
 
 try:
     from dotenv import load_dotenv
-    load_dotenv(os.path.join(PROJECT_ROOT, '.env'))
+    load_dotenv(os.path.join(PROJECT_ROOT, '.env'), override=True)
     from langgraph_agent import get_langgraph_agent
     LANGGRAPH_AVAILABLE = True
     print("✅ LangGraph Agent 模块可用")
@@ -1028,6 +1028,290 @@ def multi_agent_analysis():
             'error': error_msg,
             'timestamp': datetime.now().isoformat()
         }), status_code
+
+
+# ================ 流式 SSE 端点 ================
+
+def _read_history_data(days):
+    """读取历史监测数据（供 SSE 端点复用）"""
+    possible_dirs = [
+        os.path.join(PROJECT_ROOT, "data", "monitor_results", "results"),
+        os.path.join(PROJECT_ROOT, "backend", "data", "monitor_results", "results"),
+        os.path.join(os.path.dirname(PROJECT_ROOT), "data", "monitor_results", "results"),
+    ]
+    results_dir = None
+    for dir_path in possible_dirs:
+        if os.path.exists(dir_path):
+            results_dir = dir_path
+            break
+    history_data = []
+    if results_dir:
+        for filename in os.listdir(results_dir):
+            if not filename.endswith('.json'):
+                continue
+            filepath = os.path.join(results_dir, filename)
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    result = json.load(f)
+                if days:
+                    result_time = datetime.fromisoformat(result['timestamp'].replace('Z', '+00:00'))
+                    if result_time.tzinfo is not None:
+                        result_time = result_time.replace(tzinfo=None)
+                    cutoff_time = datetime.now() - timedelta(days=days)
+                    if result_time < cutoff_time:
+                        continue
+                history_data.append(result)
+            except Exception:
+                pass
+    return history_data
+
+
+def _get_llm_client_and_info():
+    """获取 LLM 客户端、模型名与提供者名（供 SSE 复用）"""
+    deepseek_key = None
+    dashscope_key = None
+    if get_api_key:
+        deepseek_key = get_api_key("deepseek")
+        dashscope_key = get_api_key("dashscope")
+    if not deepseek_key:
+        deepseek_key = os.getenv("DEEPSEEK_API_KEY")
+    if not dashscope_key:
+        dashscope_key = os.getenv("DASHSCOPE_API_KEY")
+    if not deepseek_key and not dashscope_key:
+        raise ValueError("未找到可用 API Key")
+    if deepseek_key:
+        return OpenAI(api_key=deepseek_key, base_url="https://api.deepseek.com"), "deepseek-chat", "DeepSeek"
+    return OpenAI(api_key=dashscope_key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"), "qwen-plus", "DashScope"
+
+
+@app.route('/comprehensive_analysis_stream', methods=['GET'])
+def comprehensive_analysis_stream():
+    """
+    SSE 流式端点 —— 单智能体：逐 token 返回大模型回复。
+    查询参数：analysis_type, days, user_context (JSON)
+    """
+    analysis_type = request.args.get('analysis_type', 'health_advice')
+    days = int(request.args.get('days', 7))
+    user_context_str = request.args.get('user_context', '{}')
+    try:
+        user_context = json.loads(user_context_str)
+    except Exception:
+        user_context = {"age_group": "adult", "stress_level": "medium", "has_support_system": True, "is_first_time": False}
+
+    def generate():
+        try:
+            history_data = _read_history_data(days)
+            if not history_data:
+                history_data = generate_sample_data(10)
+            analysis_result = analyze_comprehensive_data(history_data, analysis_type)
+
+            # 先发送 meta 信息
+            meta = json.dumps({
+                "type": "meta",
+                "analysis": analysis_result,
+                "total_samples": len(history_data)
+            }, ensure_ascii=False)
+            yield f"data: {meta}\n\n"
+
+            if not OPENAI_AVAILABLE:
+                algo = generate_algorithm_based_analysis(analysis_result, analysis_type)
+                yield f"data: {json.dumps({'type': 'fallback', 'algo': algo}, ensure_ascii=False)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+
+            client, model_name, provider_name = _get_llm_client_and_info()
+            prompt = build_llm_prompt(analysis_result, analysis_type, user_context)
+            messages = [
+                {"role": "system", "content": build_system_prompt(analysis_type, user_context)},
+                {"role": "user", "content": prompt}
+            ]
+
+            yield f"data: {json.dumps({'type': 'provider', 'provider': provider_name, 'model': model_name}, ensure_ascii=False)}\n\n"
+
+            stream = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=2000,
+                stream=True
+            )
+            for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if delta and delta.content:
+                    yield f"data: {json.dumps({'type': 'token', 'content': delta.content}, ensure_ascii=False)}\n\n"
+
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+        'Access-Control-Allow-Origin': '*',
+    })
+
+
+@app.route('/multi_agent_analysis_stream', methods=['GET'])
+def multi_agent_analysis_stream():
+    """
+    SSE 流式端点 —— 多智能体：每个 Agent 的输出逐 token 流式返回。
+    查询参数：
+      - days: int  (当 selected_files 未提供时，按天数筛选)
+      - selected_files: JSON 字符串，包含 result JSON 文件名列表（优先级高于 days）
+      - user_context: JSON 字符串
+    """
+    days = int(request.args.get('days', 7))
+    selected_files_str = request.args.get('selected_files', '[]')
+    user_context_str = request.args.get('user_context', '{}')
+    try:
+        selected_files = json.loads(selected_files_str)
+    except Exception:
+        selected_files = []
+    try:
+        user_context = json.loads(user_context_str)
+    except Exception:
+        user_context = {"age_group": "adult", "stress_level": "medium", "has_support_system": True, "is_first_time": False}
+
+    def generate():
+        try:
+            if not MULTI_AGENT_AVAILABLE:
+                yield f"data: {json.dumps({'type': 'error', 'error': 'multiAgent 模块不可用'}, ensure_ascii=False)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+
+            # 优先使用指定文件列表，否则按 days 筛选
+            if selected_files:
+                results_dir = _monitor_results_dir()
+                history_data = []
+                for fname in selected_files:
+                    safe = os.path.basename(fname)
+                    fpath = os.path.join(results_dir, safe)
+                    try:
+                        with open(fpath, 'r', encoding='utf-8') as f:
+                            history_data.append(json.load(f))
+                    except Exception:
+                        pass
+            else:
+                history_data = _read_history_data(days)
+
+            if not history_data:
+                history_data = generate_sample_data(10)
+            total_samples = len(history_data)
+
+            from multiAgent.MultiAgentFlow import (
+                make_agent, format_user_context,
+                ANALYST_SYSTEM_PROMPT, PSYCHOLOGIST_SYSTEM_PROMPT,
+                PLANNER_SYSTEM_PROMPT, EDITOR_SYSTEM_PROMPT,
+            )
+
+            user_context_fmt = format_user_context(user_context)
+            generated_at = datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
+
+            meta = json.dumps({"type": "meta", "total_samples": total_samples, "user_context": user_context_fmt}, ensure_ascii=False)
+            yield f"data: {meta}\n\n"
+
+            # Step 1: 数据分析师
+            analyst_input = (
+                f"以下是用户的情绪时间序列数据（共 {total_samples} 条），请进行数据分析：\n\n"
+                f"```json\n{json.dumps(history_data, ensure_ascii=False, indent=2)}\n```"
+            )
+            yield f"data: {json.dumps({'type': 'agent_start', 'step': 1, 'name': '数据分析师', 'icon': '🔍'}, ensure_ascii=False)}\n\n"
+            analyst_agent = make_agent("数据分析师", ANALYST_SYSTEM_PROMPT, temperature=0.3)
+            analyst_agent.create_conversation()
+            analyst_agent.add_user_message(analyst_input)
+            analyst_output = ""
+            stream = analyst_agent.client.chat.completions.create(
+                model=analyst_agent.model, messages=analyst_agent.conversation_history,
+                temperature=analyst_agent.temperature, max_tokens=analyst_agent.max_tokens, stream=True
+            )
+            for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if delta and delta.content:
+                    analyst_output += delta.content
+                    yield f"data: {json.dumps({'type': 'token', 'step': 1, 'content': delta.content}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'type': 'agent_end', 'step': 1}, ensure_ascii=False)}\n\n"
+
+            # Step 2: 心理评估师
+            psychologist_input = f"## 数据分析结论\n\n{analyst_output}\n\n---\n\n## 用户画像\n\n{user_context_fmt}"
+            yield f"data: {json.dumps({'type': 'agent_start', 'step': 2, 'name': '心理评估师', 'icon': '💬'}, ensure_ascii=False)}\n\n"
+            psych_agent = make_agent("心理评估师", PSYCHOLOGIST_SYSTEM_PROMPT, temperature=0.7, max_tokens=600)
+            psych_agent.create_conversation()
+            psych_agent.add_user_message(psychologist_input)
+            psychologist_output = ""
+            stream = psych_agent.client.chat.completions.create(
+                model=psych_agent.model, messages=psych_agent.conversation_history,
+                temperature=psych_agent.temperature, max_tokens=psych_agent.max_tokens, stream=True
+            )
+            for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if delta and delta.content:
+                    psychologist_output += delta.content
+                    yield f"data: {json.dumps({'type': 'token', 'step': 2, 'content': delta.content}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'type': 'agent_end', 'step': 2}, ensure_ascii=False)}\n\n"
+
+            # Step 3: 行动规划师
+            planner_input = f"## 心理评估结果\n\n{psychologist_output}\n\n---\n\n## 用户画像\n\n{user_context_fmt}"
+            yield f"data: {json.dumps({'type': 'agent_start', 'step': 3, 'name': '行动规划师', 'icon': '🎯'}, ensure_ascii=False)}\n\n"
+            planner_agent = make_agent("行动规划师", PLANNER_SYSTEM_PROMPT, temperature=0.5)
+            planner_agent.create_conversation()
+            planner_agent.add_user_message(planner_input)
+            planner_output = ""
+            stream = planner_agent.client.chat.completions.create(
+                model=planner_agent.model, messages=planner_agent.conversation_history,
+                temperature=planner_agent.temperature, max_tokens=planner_agent.max_tokens, stream=True
+            )
+            for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if delta and delta.content:
+                    planner_output += delta.content
+                    yield f"data: {json.dumps({'type': 'token', 'step': 3, 'content': delta.content}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'type': 'agent_end', 'step': 3}, ensure_ascii=False)}\n\n"
+
+            # Step 4: 报告主编
+            editor_input = (
+                f"请按照你的模板生成最终报告，以下是各专家的输出和元信息：\n\n"
+                f"**生成时间**：{generated_at}\n**样本数量**：{total_samples} 条\n**用户画像**：{user_context_fmt}\n\n---\n\n"
+                f"### 数据分析师输出\n\n{analyst_output}\n\n---\n\n"
+                f"### 心理评估师输出\n\n{psychologist_output}\n\n---\n\n"
+                f"### 行动规划师输出\n\n{planner_output}"
+            )
+            yield f"data: {json.dumps({'type': 'agent_start', 'step': 4, 'name': '报告主编', 'icon': '📝'}, ensure_ascii=False)}\n\n"
+            editor_agent = make_agent("报告主编", EDITOR_SYSTEM_PROMPT, temperature=0.5, max_tokens=3000)
+            editor_agent.create_conversation()
+            editor_agent.add_user_message(editor_input)
+            final_report = ""
+            stream = editor_agent.client.chat.completions.create(
+                model=editor_agent.model, messages=editor_agent.conversation_history,
+                temperature=editor_agent.temperature, max_tokens=editor_agent.max_tokens, stream=True
+            )
+            for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if delta and delta.content:
+                    final_report += delta.content
+                    yield f"data: {json.dumps({'type': 'token', 'step': 4, 'content': delta.content}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'type': 'agent_end', 'step': 4}, ensure_ascii=False)}\n\n"
+
+            # 保存报告
+            output_filename = f"multi_agent_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+            output_path = os.path.join(COMPREHENSIVE_RESULT_DIR, output_filename)
+            try:
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(final_report)
+            except Exception:
+                pass
+
+            yield f"data: {json.dumps({'type': 'complete', 'output_file': output_filename}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+        'Access-Control-Allow-Origin': '*',
+    })
 
 
 def generate_sample_data(num_samples):
@@ -2219,6 +2503,45 @@ def _load_monitor_result_for_image(safe_image_basename):
         except Exception:
             continue
     return None
+
+
+@app.route('/monitor/captures_with_emotions', methods=['GET'])
+def captures_with_emotions():
+    """
+    返回所有抓拍图片及其情绪分析结果，按时间升序排列。
+    供前端图片选择器使用。
+    """
+    try:
+        results_dir = _monitor_results_dir()
+        images_dir = _monitor_images_base_dir()
+        items = []
+        if os.path.isdir(results_dir):
+            for fname in os.listdir(results_dir):
+                if not fname.endswith('.json'):
+                    continue
+                fpath = os.path.join(results_dir, fname)
+                try:
+                    with open(fpath, 'r', encoding='utf-8') as f:
+                        d = json.load(f)
+                    img_filename = d.get('image_filename', '')
+                    img_exists = bool(img_filename) and os.path.isfile(os.path.join(images_dir, img_filename))
+                    items.append({
+                        'result_file': fname,
+                        'image_filename': img_filename,
+                        'image_url': f'/monitor/captures/file/{img_filename}' if img_exists else None,
+                        'timestamp': d.get('timestamp', ''),
+                        'emotion': d.get('emotion', ''),
+                        'emotion_zh': d.get('emotion_zh', ''),
+                        'confidence': round(float(d.get('confidence', 0)), 4),
+                        'probabilities': d.get('probabilities', {}),
+                        'face_detected': bool(d.get('face_detected', False)),
+                    })
+                except Exception:
+                    pass
+        items.sort(key=lambda x: x['timestamp'])
+        return jsonify({'success': True, 'items': items, 'total': len(items)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/monitor/captures/result/<path:filename>', methods=['GET'])

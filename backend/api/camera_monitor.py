@@ -396,9 +396,13 @@ class CameraMonitor:
 
                 # 保存图像
                 try:
-                    # 调整图像质量
+                    # 使用 imencode + 手动写文件，避免 OpenCV 不支持中文路径的问题
                     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 85]
-                    success = cv2.imwrite(image_path, frame, encode_param)
+                    ret, buf = cv2.imencode('.jpg', frame, encode_param)
+                    if ret:
+                        with open(image_path, 'wb') as f:
+                            f.write(buf.tobytes())
+                    success = ret
 
                     if success:
                         self.total_captures += 1
