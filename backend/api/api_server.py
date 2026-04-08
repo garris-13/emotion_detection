@@ -2734,6 +2734,70 @@ def langgraph_chat():
         }), 500
 
 
+@app.route('/langgraph/chat/stream', methods=['POST'])
+def langgraph_chat_stream():
+    """
+    SSE 流式端点 —— 与 LangGraph Agent 对话，逐 token 返回回复。
+    请求体格式:
+    {
+        "message": "用户消息",
+        "user_id": 1,
+        "session_id": "session_123"
+    }
+    """
+    try:
+        if not LANGGRAPH_AVAILABLE or langgraph_agent is None:
+            return jsonify({
+                'success': False,
+                'error': 'LangGraph Agent 不可用',
+                'timestamp': datetime.now().isoformat()
+            }), 503
+
+        if not request.is_json:
+            return jsonify({
+                'success': False,
+                'error': '请求必须是 JSON 格式',
+                'timestamp': datetime.now().isoformat()
+            }), 400
+
+        data = request.get_json()
+        user_message = data.get('message', '')
+        user_id = data.get('user_id', 1)
+        session_id = data.get('session_id')
+
+        if not user_message:
+            return jsonify({
+                'success': False,
+                'error': '请提供消息内容',
+                'timestamp': datetime.now().isoformat()
+            }), 400
+
+        def generate():
+            try:
+                for token_data in langgraph_agent.chat_stream(user_message, user_id, session_id):
+                    yield f"data: {json.dumps(token_data, ensure_ascii=False)}\n\n"
+                yield "data: [DONE]\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'type': 'error', 'error': str(e)}, ensure_ascii=False)}\n\n"
+                yield "data: [DONE]\n\n"
+
+        return Response(generate(), mimetype='text/event-stream', headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Access-Control-Allow-Origin': '*',
+        })
+
+    except Exception as e:
+        print(f"❌ LangGraph Agent 流式对话失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
 @app.route('/langgraph/status', methods=['GET'])
 def langgraph_status():
     """获取 LangGraph Agent 状态"""

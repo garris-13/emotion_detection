@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <base href="../">
@@ -10,6 +10,7 @@
     <title>EmoCare - 智能情绪识别</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* ============ CSS Variables ============ */
         :root {
@@ -614,6 +615,66 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-bottom-left-radius: 6px;
+        }
+        .chat-bubble.assistant .markdown-content {
+            line-height: 1.6;
+        }
+        .chat-bubble.assistant .markdown-content p {
+            margin: 0 0 8px 0;
+        }
+        .chat-bubble.assistant .markdown-content p:last-child {
+            margin-bottom: 0;
+        }
+        .chat-bubble.assistant .markdown-content h1,
+        .chat-bubble.assistant .markdown-content h2,
+        .chat-bubble.assistant .markdown-content h3 {
+            margin: 12px 0 8px 0;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .chat-bubble.assistant .markdown-content h1 { font-size: 1.1em; }
+        .chat-bubble.assistant .markdown-content h2 { font-size: 1em; }
+        .chat-bubble.assistant .markdown-content h3 { font-size: 0.95em; }
+        .chat-bubble.assistant .markdown-content ul,
+        .chat-bubble.assistant .markdown-content ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        .chat-bubble.assistant .markdown-content li {
+            margin: 4px 0;
+        }
+        .chat-bubble.assistant .markdown-content code {
+            background: rgba(99,102,241,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        .chat-bubble.assistant .markdown-content pre {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .chat-bubble.assistant .markdown-content pre code {
+            background: transparent;
+            padding: 0;
+        }
+        .chat-bubble.assistant .markdown-content blockquote {
+            border-left: 3px solid var(--primary-light);
+            padding-left: 12px;
+            margin: 8px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        .chat-bubble.assistant .markdown-content strong {
+            font-weight: 600;
+            color: var(--text);
+        }
+        .chat-bubble.assistant .markdown-content a {
+            color: var(--primary);
+            text-decoration: underline;
         }
         .chat-bubble .time {
             font-size: .7rem;
@@ -2934,7 +2995,12 @@
         c.innerHTML = chatMessages.map(m => {
             const isUser = m.role==='user';
             const ts = m.created_at||m.timestamp||new Date().toISOString();
-            return `<div class="chat-bubble ${isUser?'user':'assistant'}"><div>${escapeHtml(m.content)}</div><div class="time">${new Date(ts).toLocaleTimeString()}</div></div>`;
+            if (isUser) {
+                return `<div class="chat-bubble user"><div>${escapeHtml(m.content)}</div><div class="time">${new Date(ts).toLocaleTimeString()}</div></div>`;
+            } else {
+                const renderedContent = typeof marked !== 'undefined' ? marked.parse(m.content) : escapeHtml(m.content);
+                return `<div class="chat-bubble assistant"><div class="markdown-content">${renderedContent}</div><div class="time">${new Date(ts).toLocaleTimeString()}</div></div>`;
+            }
         }).join('');
         c.scrollTop = c.scrollHeight;
     }
@@ -2945,15 +3011,82 @@
         if (!msg) { showStatus('请输入消息','error'); return; }
         if (!currentSessionId) { showStatus('请先选择或创建会话','error'); return; }
         input.value='';
+        input.disabled=true;
+        const sendBtn = document.querySelector('.chat-input-bar button');
+        if (sendBtn) sendBtn.disabled=true;
+
         chatMessages.push({role:'user', content:msg, timestamp:new Date().toISOString()});
         renderChatMessages();
+
+        const assistantMsgIndex = chatMessages.length;
+        chatMessages.push({role:'assistant', content:'', timestamp:new Date().toISOString()});
+        const tempBubbleId = `temp-bubble-${Date.now()}`;
+
         try {
-            const res = await fetch(`${API_BASE_URL}/langgraph/chat`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg, user_id:currentUserId, session_id:currentSessionId})});
-            if (res.ok) {
-                const r = await res.json();
-                if (r.success) { chatMessages.push({role:'assistant', content:r.response||r.message||'抱歉，无法回复', timestamp:new Date().toISOString()}); renderChatMessages(); }
+            const response = await fetch(`${API_BASE_URL}/langgraph/chat/stream`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    message: msg,
+                    user_id: currentUserId,
+                    session_id: currentSessionId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        } catch(e) { showStatus('发送失败','error'); }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullContent = '';
+
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, {stream: true});
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6).trim();
+                        if (data === '[DONE]') continue;
+                        try {
+                            const parsed = JSON.parse(data);
+                            if (parsed.type === 'token' && parsed.content) {
+                                fullContent += parsed.content;
+                                chatMessages[assistantMsgIndex].content = fullContent;
+                                renderChatMessages();
+                            } else if (parsed.type === 'error') {
+                                throw new Error(parsed.error);
+                            }
+                        } catch(e) {
+                            if (e.message !== 'Unexpected token') throw e;
+                        }
+                    }
+                }
+            }
+
+            if (!fullContent) {
+                chatMessages[assistantMsgIndex].content = '抱歉，无法回复';
+                renderChatMessages();
+            }
+
+        } catch(error) {
+            console.error('Stream error:', error);
+            if (!chatMessages[assistantMsgIndex].content) {
+                chatMessages[assistantMsgIndex].content = `错误: ${error.message}`;
+                renderChatMessages();
+            }
+            showStatus('发送失败','error');
+        } finally {
+            input.disabled=false;
+            if (sendBtn) sendBtn.disabled=false;
+            input.focus();
+        }
     }
     </script>
 

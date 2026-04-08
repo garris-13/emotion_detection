@@ -640,8 +640,122 @@ class LangGraphEmotionAgent:
                 "error": str(e),
                 "response": "抱歉，我遇到了一些问题。让我们换个话题聊聊吧？"
             }
-    
-    def _save_chat_async(self, user_id: int, session_id: str, user_message: str, 
+
+    def chat_stream(self, user_message: str, user_id: int = 1, session_id: str = None,
+                    create_session: bool = True):
+        """
+        流式对话 - 逐 token 返回回复
+        生成器函数，yield 字典格式的 token 数据
+        """
+        if not self.graph:
+            yield {"type": "error", "error": "LangGraph 未初始化"}
+            return
+
+        # 检查会话是否存在，如果不存在则创建
+        is_new_session = False
+        if self.db and session_id:
+            existing_session = self.db.get_conversation_session(session_id)
+            if not existing_session and create_session:
+                title = user_message[:20] if len(user_message) > 20 else user_message
+                new_session = self.db.create_conversation_session(user_id, title)
+                if new_session:
+                    session_id = new_session['id']
+                    is_new_session = True
+
+        if not session_id:
+            if self.db and create_session:
+                title = user_message[:20] if len(user_message) > 20 else user_message
+                new_session = self.db.create_conversation_session(user_id, title)
+                if new_session:
+                    session_id = new_session['id']
+                    is_new_session = True
+            if not session_id:
+                session_id = str(uuid.uuid4())
+                is_new_session = True
+
+        # 获取对话历史
+        conversation_history = []
+        message_count = 0
+        if self.db:
+            conversation_history = self.db.get_conversation_history(user_id, session_id)
+            message_count = len(conversation_history)
+
+        # 如果是新会话，清除缓存
+        if is_new_session and self.db:
+            try:
+                delete_query = "DELETE FROM system_prompt_cache WHERE user_id = %s AND session_id = %s"
+                self.db._execute_query(delete_query, (user_id, session_id), commit=True)
+            except Exception as e:
+                print(f"⚠️ 清除缓存失败: {e}")
+
+        # 初始状态
+        initial_state: AgentState = {
+            "user_id": user_id,
+            "session_id": session_id,
+            "user_message": user_message,
+            "personality_summary": None,
+            "recent_emotion_summary": None,
+            "system_prompt": None,
+            "conversation_history": conversation_history,
+            "response": None,
+            "step": "analyze" if is_new_session else "check_cache"
+        }
+
+        try:
+            # 执行图获取最终状态（包含系统提示词）
+            final_state = self.graph.invoke(initial_state)
+
+            # 使用流式方式生成响应
+            full_response = ""
+            messages = []
+            system_prompt = final_state.get("system_prompt", "")
+
+            if system_prompt:
+                from langchain_core.messages import SystemMessage
+                messages.append(SystemMessage(content=system_prompt))
+
+            # 添加对话历史
+            for msg in conversation_history[-10:]:  # 只取最近10条消息
+                from langchain_core.messages import HumanMessage, AIMessage
+                if msg.get("role") == "user":
+                    messages.append(HumanMessage(content=msg.get("content", "")))
+                elif msg.get("role") == "assistant":
+                    messages.append(AIMessage(content=msg.get("content", "")))
+
+            # 添加当前用户消息
+            from langchain_core.messages import HumanMessage
+            messages.append(HumanMessage(content=user_message))
+
+            # 流式调用 LLM
+            stream = self.llm.stream(messages)
+
+            for chunk in stream:
+                content = chunk.content
+                if content:
+                    full_response += content
+                    yield {
+                        "type": "token",
+                        "content": content
+                    }
+
+            # 后台异步保存对话
+            if self.db and full_response:
+                should_generate_summary = (message_count + 2) % 10 == 0
+                thread = threading.Thread(
+                    target=self._save_chat_async,
+                    args=(user_id, session_id, user_message, full_response,
+                          should_generate_summary, final_state["step"] == "use_cache")
+                )
+                thread.daemon = True
+                thread.start()
+
+        except Exception as e:
+            print(f"❌ 流式对话失败: {e}")
+            import traceback
+            traceback.print_exc()
+            yield {"type": "error", "error": str(e)}
+
+    def _save_chat_async(self, user_id: int, session_id: str, user_message: str,
                          assistant_response: str, should_generate_summary: bool, used_cache: bool):
         """异步保存对话和生成总结"""
         try:
