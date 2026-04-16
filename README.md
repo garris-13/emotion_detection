@@ -59,6 +59,7 @@ EmoCare/
 │   └── examples/           # 前端界面示例
 │       └── emotion_ui.html # 用户交互界面
 ├── data/                   # 数据存储（日志/临时文件）
+├── facenet/                # 人脸识别接口
 ├── best_model.pth          # 训练好的模型权重文件
 ├── advice_rules.json       # 心理健康建议规则库
 ├── start.bat               # ✅ Windows 一键启动脚本
@@ -113,7 +114,12 @@ python backend/database/init_db.py
 ```bash
 python backend/database/create_default_user.py
 ```
-### 5. Conda 环境配置（若使用conda+cuda参考此启动方法）
+### 5. 配置人脸识别接口环境
+1. 从 https://github.com/timesler/facenet-pytorch fork人脸识别项目  
+2. 将fork的项目facenet克隆到该项目的根目录
+3. 配置facenet`python -m pip install -e .\facenet`
+
+### 6. Conda 环境配置（若使用conda+cuda参考此启动方法）
 
 (1) 创建 conda 环境
 ```bash
@@ -153,7 +159,7 @@ conda activate emotiondetection
 python -m http.server 8000
 ```
 
-### 6. venv 环境配置（若使用venv环境参考此启动方法）
+### 7. venv 环境配置（若使用venv环境参考此启动方法）
 
 如果您不想使用 conda 环境，可以使用 .venv 虚拟环境：
 
@@ -204,7 +210,7 @@ python backend\api\api_server.py
 python -m http.server 8000
 ```
 
-### 7. 访问界面
+### 8. 访问界面
 启动成功后，在浏览器中访问：
 👉 **http://localhost:8000/frontend/examples/emotion_ui.html**
 
