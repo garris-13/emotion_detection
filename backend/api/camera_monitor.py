@@ -10,6 +10,7 @@ import threading
 import json
 from datetime import datetime
 import traceback
+import re
 
 # 添加后端目录和项目根目录到路径
 BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -79,10 +80,24 @@ except Exception as e:
     print(f"⚠️ facenet MTCNN 导入失败，将回退到 OpenCV 人脸检测: {e}")
 
 
+MONITOR_SCOPE_UUID_RE = re.compile(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+    re.IGNORECASE,
+)
+
+
+def sanitize_monitor_scope_id(scope_id):
+    """登录会话抓拍目录用的 scope，仅接受标准 UUID 字符串。"""
+    if not scope_id or not isinstance(scope_id, str):
+        return None
+    s = scope_id.strip()
+    return s.lower() if MONITOR_SCOPE_UUID_RE.match(s) else None
+
+
 class CameraMonitor:
     """USB摄像头监测器"""
 
-    def __init__(self, model_path=None, capture_interval=5, save_dir="data/monitor_results", user_id=1, session_id=None, db_manager=None):
+    def __init__(self, model_path=None, capture_interval=5, save_dir="data/monitor_results", user_id=1, session_id=None, monitor_scope_id=None, db_manager=None):
         """
         初始化摄像头监测器
 
@@ -92,12 +107,14 @@ class CameraMonitor:
             save_dir: 保存目录
             user_id: 用户ID
             session_id: 会话ID
+            monitor_scope_id: 本次登录抓拍作用域（UUID），与 user_id 组合为独立子目录
             db_manager: 数据库管理器
         """
         self.capture_interval = capture_interval
         self.save_dir = save_dir
         self.user_id = user_id
         self.session_id = session_id
+        self.monitor_scope_id = monitor_scope_id
         self.db_manager = db_manager
 
         # 检查OpenCV可用性
@@ -123,10 +140,10 @@ class CameraMonitor:
         self._last_face_detect_time = 0.0
         self._face_detect_interval = 0.35
 
-        # 创建保存目录
         os.makedirs(save_dir, exist_ok=True)
-        os.makedirs(os.path.join(save_dir, "images"), exist_ok=True)
-        os.makedirs(os.path.join(save_dir, "results"), exist_ok=True)
+        self.images_dir = None
+        self.results_dir = None
+        self._refresh_storage_paths()
 
         # 设备设置（只有在 torch 可用时才设置）
         if TORCH_AVAILABLE and torch is not None:
@@ -199,6 +216,30 @@ class CameraMonitor:
         self.emotions = list(self.emotion_zh.keys())
 
         print(f"📂 监测数据保存到: {os.path.abspath(save_dir)}")
+        print(f"📂 当前抓拍目录: {os.path.abspath(self.images_dir)}")
+
+    def _refresh_storage_paths(self):
+        scope = sanitize_monitor_scope_id(self.monitor_scope_id)
+        if scope:
+            self.images_dir = os.path.join(self.save_dir, "images", str(self.user_id), scope)
+            self.results_dir = os.path.join(self.save_dir, "results", str(self.user_id), scope)
+        else:
+            self.images_dir = os.path.join(self.save_dir, "images")
+            self.results_dir = os.path.join(self.save_dir, "results")
+        os.makedirs(self.images_dir, exist_ok=True)
+        os.makedirs(self.results_dir, exist_ok=True)
+
+    def set_scope(self, user_id, session_id=None, monitor_scope_id=None, db_manager=None):
+        self.user_id = user_id
+        if session_id is not None:
+            self.session_id = session_id
+        if db_manager is not None:
+            self.db_manager = db_manager
+        if monitor_scope_id is not None and str(monitor_scope_id).strip() != '':
+            sanitized = sanitize_monitor_scope_id(monitor_scope_id)
+            if sanitized:
+                self.monitor_scope_id = sanitized
+        self._refresh_storage_paths()
 
     def check_camera(self, camera_index=0):
         """
@@ -392,7 +433,7 @@ class CameraMonitor:
                 # 保存图像文件
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
                 image_filename = f"capture_{timestamp}.jpg"
-                image_path = os.path.join(self.save_dir, "images", image_filename)
+                image_path = os.path.join(self.images_dir, image_filename)
 
                 # 保存图像
                 try:
@@ -559,7 +600,12 @@ class CameraMonitor:
 
             # 保存结果到JSON文件
             result_filename = f"result_{timestamp}.json"
-            result_path = os.path.join(self.save_dir, "results", result_filename)
+            result_path = os.path.join(self.results_dir, result_filename)
+
+            scope = sanitize_monitor_scope_id(self.monitor_scope_id)
+            if scope:
+                result['monitor_user_id'] = self.user_id
+                result['monitor_scope_id'] = scope
 
             with open(result_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, ensure_ascii=False, indent=2)
@@ -783,7 +829,7 @@ class CameraMonitor:
 
     def analyze_history(self, days=None):
         """分析历史数据"""
-        results_dir = os.path.join(self.save_dir, "results")
+        results_dir = self.results_dir
 
         if not os.path.exists(results_dir):
             return {
@@ -909,7 +955,7 @@ class CameraMonitor:
 
     def analyze_history_with_advice(self, days=None):
         """分析历史数据并生成健康建议"""
-        results_dir = os.path.join(self.save_dir, "results")
+        results_dir = self.results_dir
 
         if not os.path.exists(results_dir):
             return {
@@ -1102,7 +1148,7 @@ class CameraMonitor:
 
     def get_recent_results(self, limit=10):
         """获取最近的结果"""
-        results_dir = os.path.join(self.save_dir, "results")
+        results_dir = self.results_dir
 
         if not os.path.exists(results_dir):
             return []
@@ -1139,7 +1185,7 @@ class CameraMonitor:
 global_monitor = None
 
 
-def get_monitor(model_path=None, save_dir=None, user_id=1, session_id=None, db_manager=None):
+def get_monitor(model_path=None, save_dir=None, user_id=1, session_id=None, monitor_scope_id=None, db_manager=None):
     """获取全局监测器实例"""
     global global_monitor
 
@@ -1153,18 +1199,21 @@ def get_monitor(model_path=None, save_dir=None, user_id=1, session_id=None, db_m
         print(f"📁 保存目录: {save_dir}")
 
         global_monitor = CameraMonitor(
-            model_path=model_path, 
+            model_path=model_path,
             save_dir=save_dir,
             user_id=user_id,
             session_id=session_id,
+            monitor_scope_id=monitor_scope_id,
             db_manager=db_manager
         )
         print("✅ 摄像头监测器初始化完成")
     else:
-        # 更新已存在的监测器的参数
-        global_monitor.user_id = user_id
-        global_monitor.session_id = session_id
-        global_monitor.db_manager = db_manager
+        global_monitor.set_scope(
+            user_id,
+            session_id=session_id,
+            monitor_scope_id=monitor_scope_id,
+            db_manager=db_manager,
+        )
 
     return global_monitor
 

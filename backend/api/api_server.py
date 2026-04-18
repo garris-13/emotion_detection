@@ -6,6 +6,7 @@
 
 import sys
 import os
+from urllib.parse import urlencode
 
 # ================ 修复路径和导入问题 ================
 
@@ -1032,8 +1033,43 @@ def multi_agent_analysis():
 
 # ================ 流式 SSE 端点 ================
 
-def _read_history_data(days):
+def _read_history_data(days, user_id=None, monitor_scope_id=None):
     """读取历史监测数据（供 SSE 端点复用）"""
+    scope = sanitize_monitor_scope_id(monitor_scope_id) if monitor_scope_id else None
+    if user_id is not None:
+        try:
+            uid = int(user_id)
+        except (TypeError, ValueError):
+            uid = None
+        if uid is not None:
+            results_base = os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+            if scope is not None:
+                target_dirs = [(scope, os.path.join(results_base, str(uid), scope))]
+            else:
+                target_dirs = _iter_user_scope_dirs(results_base, uid)
+            history_data = []
+            for _scope_id, results_dir in target_dirs:
+                if not os.path.isdir(results_dir):
+                    continue
+                for filename in os.listdir(results_dir):
+                    if not filename.endswith('.json'):
+                        continue
+                    filepath = os.path.join(results_dir, filename)
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            result = json.load(f)
+                        if days:
+                            result_time = datetime.fromisoformat(result['timestamp'].replace('Z', '+00:00'))
+                            if result_time.tzinfo is not None:
+                                result_time = result_time.replace(tzinfo=None)
+                            cutoff_time = datetime.now() - timedelta(days=days)
+                            if result_time < cutoff_time:
+                                continue
+                        history_data.append(result)
+                    except Exception:
+                        pass
+            return history_data
+
     possible_dirs = [
         os.path.join(PROJECT_ROOT, "data", "monitor_results", "results"),
         os.path.join(PROJECT_ROOT, "backend", "data", "monitor_results", "results"),
@@ -1164,6 +1200,9 @@ def multi_agent_analysis_stream():
     days = int(request.args.get('days', 7))
     selected_files_str = request.args.get('selected_files', '[]')
     user_context_str = request.args.get('user_context', '{}')
+    stream_user_id = request.args.get('user_id', type=int)
+    stream_scope_raw = request.args.get('monitor_scope_id', '')
+    stream_scope = sanitize_monitor_scope_id(stream_scope_raw)
     try:
         selected_files = json.loads(selected_files_str)
     except Exception:
@@ -1182,20 +1221,45 @@ def multi_agent_analysis_stream():
 
             # 优先使用指定文件列表，否则按 days 筛选
             if selected_files:
-                results_dir = _monitor_results_dir()
-                history_data = []
-                for fname in selected_files:
-                    safe = os.path.basename(fname)
-                    fpath = os.path.join(results_dir, safe)
-                    try:
-                        with open(fpath, 'r', encoding='utf-8') as f:
-                            history_data.append(json.load(f))
-                    except Exception:
-                        pass
+                if stream_user_id is None:
+                    history_data = []
+                else:
+                    results_base = os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+                    scope_dir_map = {scope: path for scope, path in _iter_user_scope_dirs(results_base, stream_user_id)}
+                    history_data = []
+                    for fname in selected_files:
+                        safe_name = os.path.basename(str(fname))
+                        scope_part = None
+                        if isinstance(fname, str) and '/' in fname:
+                            scope_part = fname.split('/', 1)[0]
+                            if not sanitize_monitor_scope_id(scope_part):
+                                scope_part = None
+                        if scope_part and scope_part in scope_dir_map:
+                            fpath = os.path.join(scope_dir_map[scope_part], safe_name)
+                        elif stream_scope is not None:
+                            fpath = os.path.join(_monitor_results_dir(stream_user_id, stream_scope), safe_name)
+                        else:
+                            fpath = None
+                            for _scope, one_dir in scope_dir_map.items():
+                                candidate = os.path.join(one_dir, safe_name)
+                                if os.path.isfile(candidate):
+                                    fpath = candidate
+                                    break
+                            if fpath is None:
+                                fpath = os.path.join(_monitor_results_dir(stream_user_id), safe_name)
+                        try:
+                            with open(fpath, 'r', encoding='utf-8') as f:
+                                history_data.append(json.load(f))
+                        except Exception:
+                            pass
             else:
-                history_data = _read_history_data(days)
+                history_data = _read_history_data(days, stream_user_id, stream_scope_raw)
 
             if not history_data:
+                if selected_files:
+                    yield f"data: {json.dumps({'type': 'error', 'error': '无法读取所选抓拍，请确认这些照片属于当前登录用户'}, ensure_ascii=False)}\n\n"
+                    yield "data: [DONE]\n\n"
+                    return
                 history_data = generate_sample_data(10)
             total_samples = len(history_data)
 
@@ -2033,7 +2097,7 @@ def build_llm_prompt(analysis_result, analysis_type, user_context=None):
 # 首先，如果导入摄像头监测模块失败，创建一个虚拟的监测器
 try:
     # 尝试从api目录导入
-    from api.camera_monitor import get_monitor
+    from api.camera_monitor import get_monitor, sanitize_monitor_scope_id
 
     CAMERA_MONITOR_IMPORT_SUCCESS = True
     print("✅ 成功导入摄像头监测模块")
@@ -2044,6 +2108,8 @@ except Exception as e:
 
     CAMERA_MONITOR_IMPORT_SUCCESS = False
 
+    def sanitize_monitor_scope_id(scope_id):
+        return None
 
     # 创建虚拟的摄像头监测器类
     class VirtualCameraMonitor:
@@ -2100,13 +2166,13 @@ except Exception as e:
             return {"status": "analysis_completed", "message": "虚拟分析完成"}
 
 
-    def get_monitor(model_path=None, save_dir="monitor_results"):
+    def get_monitor(model_path=None, save_dir="monitor_results", **kwargs):
         return VirtualCameraMonitor(model_path=model_path, save_dir=save_dir)
 
 monitor = None
 
 
-def initialize_camera_monitor(user_id=1, session_id=None):
+def initialize_camera_monitor(user_id=1, session_id=None, monitor_scope_id=None):
     """初始化摄像头监测器"""
     global monitor
     print("\n" + "=" * 70)
@@ -2131,10 +2197,11 @@ def initialize_camera_monitor(user_id=1, session_id=None):
                 break
 
         monitor = get_monitor(
-            model_path=model_path, 
+            model_path=model_path,
             save_dir=save_dir,
             user_id=user_id,
             session_id=session_id,
+            monitor_scope_id=monitor_scope_id,
             db_manager=db_manager if DATABASE_AVAILABLE else None
         )
         print("✅ 摄像头监测器初始化成功")
@@ -2218,26 +2285,36 @@ def start_monitor():
         # 获取请求参数
         user_id = 1
         session_id = None
+        monitor_scope_id = None
         if request.is_json:
             data = request.get_json()
             camera_index = data.get('camera_index', 0)
             capture_interval = data.get('capture_interval', 5)
             user_id = data.get('user_id', 1)
             session_id = data.get('session_id')
+            monitor_scope_id = data.get('monitor_scope_id')
         else:
             camera_index = request.form.get('camera_index', 0, type=int)
             capture_interval = request.form.get('capture_interval', 5, type=int)
             user_id = int(request.form.get('user_id', 1))
             session_id = request.form.get('session_id')
+            monitor_scope_id = request.form.get('monitor_scope_id')
 
         # 如果监测器未初始化，先初始化
         if monitor is None:
-            initialize_camera_monitor(user_id=user_id, session_id=session_id)
+            initialize_camera_monitor(user_id=user_id, session_id=session_id, monitor_scope_id=monitor_scope_id)
         else:
-            # 更新监测器的用户信息
-            monitor.user_id = user_id
-            monitor.session_id = session_id
-            monitor.db_manager = db_manager if DATABASE_AVAILABLE else None
+            if hasattr(monitor, 'set_scope'):
+                monitor.set_scope(
+                    user_id,
+                    session_id=session_id,
+                    monitor_scope_id=monitor_scope_id,
+                    db_manager=db_manager if DATABASE_AVAILABLE else None,
+                )
+            else:
+                monitor.user_id = user_id
+                monitor.session_id = session_id
+                monitor.db_manager = db_manager if DATABASE_AVAILABLE else None
 
         # 检查OpenCV是否可用
         if not CV2_AVAILABLE:
@@ -2253,6 +2330,7 @@ def start_monitor():
             'capture_interval': capture_interval,
             'user_id': user_id,
             'session_id': session_id,
+            'monitor_scope_id': sanitize_monitor_scope_id(monitor_scope_id) if monitor_scope_id else None,
             'result': result,
             'timestamp': datetime.now().isoformat()
         })
@@ -2358,9 +2436,38 @@ MONITOR_CAPTURE_RE = re.compile(
 )
 
 
-def _monitor_images_base_dir():
-    """与 initialize_camera_monitor 一致的抓拍图片目录"""
-    return os.path.join(PROJECT_ROOT, "data", "monitor_results", "images")
+def _iter_user_scope_dirs(base_dir, user_id):
+    """返回指定用户下所有 scope 子目录；兼容历史无 scope 的用户目录。"""
+    try:
+        uid = int(user_id)
+    except (TypeError, ValueError):
+        return []
+    user_root = os.path.join(base_dir, str(uid))
+    if not os.path.isdir(user_root):
+        return []
+    scope_dirs = []
+    for name in os.listdir(user_root):
+        sub = os.path.join(user_root, name)
+        if not os.path.isdir(sub):
+            continue
+        if sanitize_monitor_scope_id(name):
+            scope_dirs.append((name, sub))
+    if not scope_dirs:
+        scope_dirs.append((None, user_root))
+    return scope_dirs
+
+
+def _monitor_images_base_dir(user_id=None, monitor_scope_id=None):
+    """抓拍图片目录；传入 user_id + monitor_scope_id 时为该登录会话子目录。"""
+    base = os.path.join(PROJECT_ROOT, "data", "monitor_results", "images")
+    scope = sanitize_monitor_scope_id(monitor_scope_id) if monitor_scope_id else None
+    if scope is not None and user_id is not None:
+        try:
+            uid = int(user_id)
+        except (TypeError, ValueError):
+            return base
+        return os.path.join(base, str(uid), scope)
+    return base
 
 
 def _parse_capture_filename(filename):
@@ -2383,7 +2490,17 @@ def _parse_capture_filename(filename):
 def list_monitor_captures():
     """列出实时监测保存的抓拍图片，按拍摄时间有序返回"""
     try:
-        images_dir = _monitor_images_base_dir()
+        uid = request.args.get('user_id', type=int)
+        if uid is None:
+            return jsonify({
+                'success': True,
+                'captures': [],
+                'total': 0,
+                'returned': 0,
+                'order': (request.args.get('order') or 'asc').lower(),
+                'message': '请先登录后查看抓拍照片',
+                'timestamp': datetime.now().isoformat()
+            })
         order = (request.args.get('order') or 'asc').lower()
         if order not in ('asc', 'desc'):
             order = 'asc'
@@ -2392,39 +2509,46 @@ def list_monitor_captures():
             limit = 500
         limit = min(limit, 2000)
 
-        if not os.path.isdir(images_dir):
+        images_base = os.path.join(PROJECT_ROOT, "data", "monitor_results", "images")
+        scope_dirs = _iter_user_scope_dirs(images_base, uid)
+        if not scope_dirs:
             return jsonify({
                 'success': True,
                 'captures': [],
                 'total': 0,
-                'images_dir': images_dir,
                 'timestamp': datetime.now().isoformat()
             })
 
         entries = []
-        for name in os.listdir(images_dir):
-            if not MONITOR_CAPTURE_RE.match(name):
-                continue
-            path = os.path.join(images_dir, name)
-            if not os.path.isfile(path):
-                continue
-            dt = _parse_capture_filename(name)
-            if dt is None:
-                try:
-                    dt = datetime.fromtimestamp(os.path.getmtime(path))
-                except OSError:
+        for scope_id, images_dir in scope_dirs:
+            for name in os.listdir(images_dir):
+                if not MONITOR_CAPTURE_RE.match(name):
                     continue
-            entries.append((dt, name, os.path.getmtime(path)))
+                path = os.path.join(images_dir, name)
+                if not os.path.isfile(path):
+                    continue
+                dt = _parse_capture_filename(name)
+                if dt is None:
+                    try:
+                        dt = datetime.fromtimestamp(os.path.getmtime(path))
+                    except OSError:
+                        continue
+                entries.append((dt, name, os.path.getmtime(path), scope_id))
 
         entries.sort(key=lambda x: (x[0], x[2]), reverse=(order == 'desc'))
 
         captures = []
-        for dt, name, _mtime in entries[:limit]:
+        for dt, name, _mtime, scope_id in entries[:limit]:
+            cap_q = {'user_id': uid}
+            if scope_id:
+                cap_q['monitor_scope_id'] = scope_id
+            cap_qs = urlencode(cap_q)
             captures.append({
                 'filename': name,
-                'url': f'/monitor/captures/file/{name}',
+                'url': f'/monitor/captures/file/{name}?{cap_qs}',
                 'captured_at': dt.isoformat(),
                 'captured_at_display': dt.strftime('%Y-%m-%d %H:%M:%S'),
+                'scope_id': scope_id,
             })
 
         return jsonify({
@@ -2451,7 +2575,13 @@ def serve_monitor_capture_file(filename):
         safe = os.path.basename(filename)
         if safe != filename or not MONITOR_CAPTURE_RE.match(safe):
             return jsonify({'success': False, 'error': '无效的文件名'}), 400
-        images_dir = _monitor_images_base_dir()
+        uid = request.args.get('user_id', type=int)
+        scope_raw = request.args.get('monitor_scope_id', '')
+        scope = sanitize_monitor_scope_id(scope_raw)
+        if scope is not None and uid is not None:
+            images_dir = _monitor_images_base_dir(uid, scope_raw)
+        else:
+            images_dir = _monitor_images_base_dir()
         fp = os.path.join(images_dir, safe)
         if not os.path.isfile(fp):
             return jsonify({'success': False, 'error': '文件不存在'}), 404
@@ -2465,43 +2595,57 @@ def serve_monitor_capture_file(filename):
         }), 500
 
 
-def _monitor_results_dir():
-    return os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+def _monitor_results_dir(user_id=None, monitor_scope_id=None):
+    base = os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+    scope = sanitize_monitor_scope_id(monitor_scope_id) if monitor_scope_id else None
+    if scope is not None and user_id is not None:
+        try:
+            uid = int(user_id)
+        except (TypeError, ValueError):
+            return base
+        return os.path.join(base, str(uid), scope)
+    return base
 
 
-def _load_monitor_result_for_image(safe_image_basename):
+def _load_monitor_result_for_image(safe_image_basename, user_id=None, monitor_scope_id=None):
     """
     根据抓拍文件名加载对应的 result_*.json。
     首选 result_<与 capture_ 相同时间戳>.json；不存在则在 results 目录中按 image_filename 匹配。
     """
-    results_dir = _monitor_results_dir()
-    if not os.path.isdir(results_dir):
-        return None
-
     stem = safe_image_basename.rsplit('.', 1)[0]
     if not stem.startswith('capture_'):
         return None
     ts_key = stem[len('capture_'):]
-    result_path = os.path.join(results_dir, f"result_{ts_key}.json")
-    if os.path.isfile(result_path):
-        try:
-            with open(result_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"❌ 读取监测结果失败 {result_path}: {e}")
-            return None
 
-    for fn in os.listdir(results_dir):
-        if not fn.endswith('.json'):
+    if user_id is not None and monitor_scope_id is None:
+        results_base = os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+        candidate_dirs = [d for _scope, d in _iter_user_scope_dirs(results_base, user_id)]
+    else:
+        candidate_dirs = [_monitor_results_dir(user_id, monitor_scope_id)]
+
+    for results_dir in candidate_dirs:
+        if not os.path.isdir(results_dir):
             continue
-        fp = os.path.join(results_dir, fn)
-        try:
-            with open(fp, 'r', encoding='utf-8') as f:
-                obj = json.load(f)
-            if obj.get('image_filename') == safe_image_basename:
-                return obj
-        except Exception:
-            continue
+        result_path = os.path.join(results_dir, f"result_{ts_key}.json")
+        if os.path.isfile(result_path):
+            try:
+                with open(result_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"❌ 读取监测结果失败 {result_path}: {e}")
+                continue
+
+        for fn in os.listdir(results_dir):
+            if not fn.endswith('.json'):
+                continue
+            fp = os.path.join(results_dir, fn)
+            try:
+                with open(fp, 'r', encoding='utf-8') as f:
+                    obj = json.load(f)
+                if obj.get('image_filename') == safe_image_basename:
+                    return obj
+            except Exception:
+                continue
     return None
 
 
@@ -2512,10 +2656,22 @@ def captures_with_emotions():
     供前端图片选择器使用。
     """
     try:
-        results_dir = _monitor_results_dir()
-        images_dir = _monitor_images_base_dir()
+        uid = request.args.get('user_id', type=int)
+        if uid is None:
+            return jsonify({'success': True, 'items': [], 'total': 0})
+        results_base = os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+        images_base = os.path.join(PROJECT_ROOT, "data", "monitor_results", "images")
+        result_scope_dirs = _iter_user_scope_dirs(results_base, uid)
+        image_scope_map = {scope: path for scope, path in _iter_user_scope_dirs(images_base, uid)}
         items = []
-        if os.path.isdir(results_dir):
+        for scope_id, results_dir in result_scope_dirs:
+            if not os.path.isdir(results_dir):
+                continue
+            images_dir = image_scope_map.get(scope_id, _monitor_images_base_dir(uid, scope_id))
+            img_q = {'user_id': uid}
+            if scope_id:
+                img_q['monitor_scope_id'] = scope_id
+            img_qs = urlencode(img_q)
             for fname in os.listdir(results_dir):
                 if not fname.endswith('.json'):
                     continue
@@ -2526,9 +2682,11 @@ def captures_with_emotions():
                     img_filename = d.get('image_filename', '')
                     img_exists = bool(img_filename) and os.path.isfile(os.path.join(images_dir, img_filename))
                     items.append({
-                        'result_file': fname,
+                        'result_file': f"{scope_id}/{fname}" if scope_id else fname,
+                        'scope_id': scope_id,
+                        'raw_result_file': fname,
                         'image_filename': img_filename,
-                        'image_url': f'/monitor/captures/file/{img_filename}' if img_exists else None,
+                        'image_url': f'/monitor/captures/file/{img_filename}?{img_qs}' if img_exists else None,
                         'timestamp': d.get('timestamp', ''),
                         'emotion': d.get('emotion', ''),
                         'emotion_zh': d.get('emotion_zh', ''),
@@ -2552,7 +2710,13 @@ def get_monitor_capture_result(filename):
         if safe != filename or not MONITOR_CAPTURE_RE.match(safe):
             return jsonify({'success': False, 'error': '无效的图片文件名'}), 400
 
-        payload = _load_monitor_result_for_image(safe)
+        uid = request.args.get('user_id', type=int)
+        scope_raw = request.args.get('monitor_scope_id', '')
+        scope = sanitize_monitor_scope_id(scope_raw)
+        if uid is not None:
+            payload = _load_monitor_result_for_image(safe, uid, scope if scope else None)
+        else:
+            payload = _load_monitor_result_for_image(safe)
         if not payload:
             return jsonify({
                 'success': False,
@@ -2588,9 +2752,17 @@ def get_monitor_capture_result(filename):
 def analyze_monitor_data():
     """分析监测历史数据"""
     try:
-        # 如果没有监测器，尝试从保存的文件中分析
-        results_dir = _monitor_results_dir()
-        if not os.path.exists(results_dir):
+        uid = request.args.get('user_id', type=int)
+        if uid is None:
+            return jsonify({
+                'success': False,
+                'error': '请提供有效的 user_id，仅分析该用户抓拍数据',
+                'timestamp': datetime.now().isoformat()
+            }), 400
+
+        results_base = os.path.join(PROJECT_ROOT, "data", "monitor_results", "results")
+        scope_dirs = _iter_user_scope_dirs(results_base, uid)
+        if not scope_dirs:
             return jsonify({
                 'success': False,
                 'error': '没有找到监测历史数据',
@@ -2599,16 +2771,19 @@ def analyze_monitor_data():
 
         # 收集所有结果文件
         results = []
-        for filename in os.listdir(results_dir):
-            if filename.endswith('.json'):
-                filepath = os.path.join(results_dir, filename)
-                try:
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        result = json.load(f)
-                        results.append(result)
-                except Exception as e:
-                    print(f"❌ 读取结果文件失败 {filename}: {e}")
-                    continue
+        for _scope_id, results_dir in scope_dirs:
+            if not os.path.isdir(results_dir):
+                continue
+            for filename in os.listdir(results_dir):
+                if filename.endswith('.json'):
+                    filepath = os.path.join(results_dir, filename)
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            result = json.load(f)
+                            results.append(result)
+                    except Exception as e:
+                        print(f"❌ 读取结果文件失败 {filename}: {e}")
+                        continue
 
         if not results:
             return jsonify({

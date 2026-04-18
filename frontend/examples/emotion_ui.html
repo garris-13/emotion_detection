@@ -53,7 +53,7 @@
         a { text-decoration:none; color:inherit; }
         ul { list-style:none; }
 
-        /* ============ Welcome / Login Page ============ */
+        /* ============ Welcome / Login / Register Pages ============ */
         .welcome-page {
             display: flex;
             align-items: center;
@@ -163,6 +163,23 @@
             border: 1px solid rgba(255,255,255,.3);
         }
         .btn-register:hover { background: rgba(255,255,255,.25); transform:translateY(-2px); }
+        .auth-switch {
+            margin-top: 16px;
+            font-size: .9rem;
+            opacity: .92;
+        }
+        .auth-switch a {
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        .register-page .welcome-card {
+            max-width: 520px;
+        }
+        .register-page.alt {
+            background: linear-gradient(135deg, #5b7cfa 0%, #8b5cf6 100%);
+        }
 
         /* ============ App Layout ============ */
         .main-app { display:none; min-height:100vh; }
@@ -1377,10 +1394,52 @@
                 <button class="btn-login" onclick="handleWelcomeLogin()">
                     <i class="fas fa-arrow-right-to-bracket"></i> 登录
                 </button>
-                <button class="btn-register" onclick="handleWelcomeRegister()">
+                <button class="btn-register" onclick="openRegisterPage()">
                     <i class="fas fa-user-plus"></i> 注册
                 </button>
             </div>
+            <p class="auth-switch">首次使用？<a onclick="openRegisterPage()">前往注册</a></p>
+        </div>
+    </div>
+
+    <!-- ============ Register Page ============ -->
+    <div class="welcome-page register-page" id="registerPage" style="display:none;">
+        <div class="welcome-card">
+            <div class="logo">📝</div>
+            <h1>创建账号</h1>
+            <p class="subtitle">独立注册界面 · 标准注册流程</p>
+            <input type="text" id="registerUsername" placeholder="用户名（3-20 位）" autocomplete="username">
+            <input type="password" id="registerPassword" placeholder="密码（至少 6 位）" autocomplete="new-password">
+            <input type="password" id="registerConfirmPassword" placeholder="确认密码" autocomplete="new-password">
+            <div class="welcome-btns">
+                <button class="btn-login" onclick="submitRegisterPage()">
+                    <i class="fas fa-check"></i> 提交注册
+                </button>
+                <button class="btn-register" onclick="backToLogin()">
+                    <i class="fas fa-arrow-left"></i> 返回登录
+                </button>
+            </div>
+            <p class="auth-switch">想用简化版？<a onclick="openRegisterAltPage()">切换到快速注册页</a></p>
+        </div>
+    </div>
+
+    <!-- ============ Register Alternative Page ============ -->
+    <div class="welcome-page register-page alt" id="registerAltPage" style="display:none;">
+        <div class="welcome-card">
+            <div class="logo">✨</div>
+            <h1>快速注册</h1>
+            <p class="subtitle">同风格独立界面 · 轻量注册体验</p>
+            <input type="text" id="registerAltUsername" placeholder="请输入用户名" autocomplete="username">
+            <input type="password" id="registerAltPassword" placeholder="请输入密码" autocomplete="new-password">
+            <div class="welcome-btns">
+                <button class="btn-login" onclick="submitRegisterAltPage()">
+                    <i class="fas fa-user-plus"></i> 立即创建
+                </button>
+                <button class="btn-register" onclick="openRegisterPage()">
+                    <i class="fas fa-repeat"></i> 标准注册
+                </button>
+            </div>
+            <p class="auth-switch">已有账号？<a onclick="backToLogin()">返回登录</a></p>
         </div>
     </div>
 
@@ -1874,6 +1933,28 @@
     let monitorInterval = null;
     const API_BASE_URL = 'http://localhost:7860';
 
+    function newMonitorScopeSessionId() {
+        if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+    function ensureMonitorScopeSessionId() {
+        let s = localStorage.getItem('monitorScopeSessionId');
+        if (!s) {
+            s = newMonitorScopeSessionId();
+            localStorage.setItem('monitorScopeSessionId', s);
+        }
+        return s;
+    }
+    /** 监测抓拍读取接口：按当前登录用户聚合全部历史会话 */
+    function monitorScopeQueryString() {
+        if (!isLoggedIn) return '';
+        return `user_id=${encodeURIComponent(String(currentUserId))}`;
+    }
+
     const emotionIcons = {
         'surprised':'😲', 'fear':'😨', 'disgust':'🤢',
         'happy':'😊', 'sad':'😢', 'anger':'😠', 'neutral':'😐'
@@ -2111,6 +2192,32 @@
     let _reportCharts = {};         // Chart.js instances to destroy on re-render
     let _allPickerItems = [];       // all items loaded in picker
     let _pickerSelected = new Set(); // currently selected result_file names in picker
+    let pickerFaceOnlyFilter = false; // 图片选择器：只显示可用人脸图
+
+    function isFaceSelectable(item) {
+        return !!item && item.face_detected === true;
+    }
+
+    function refreshPickerView() {
+        const hintEl = document.getElementById('pickerLoadingHint');
+        const visItems = pickerFaceOnlyFilter ? _allPickerItems.filter(isFaceSelectable) : _allPickerItems;
+        if (hintEl) {
+            if (!_allPickerItems.length) {
+                hintEl.textContent = '共 0 张';
+            } else {
+                hintEl.textContent = pickerFaceOnlyFilter
+                    ? `显示 ${visItems.length} 张（仅人脸）· 共 ${_allPickerItems.length} 张`
+                    : `共 ${_allPickerItems.length} 张`;
+            }
+        }
+        renderPickerGroups(groupImagesBy5Min(visItems));
+    }
+
+    function onPickerFaceOnlyChange() {
+        const cb = document.getElementById('pickerFaceOnlyToggle');
+        pickerFaceOnlyFilter = !!(cb && cb.checked);
+        refreshPickerView();
+    }
 
     // Redirect from health tab "综合分析" button
     function analyzeComprehensiveWithLLM() {
@@ -2129,12 +2236,16 @@
         document.getElementById('pickerBody').innerHTML = '<div style="padding:60px; text-align:center; color:var(--text-muted);"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top:12px;">正在加载图片...</p></div>';
         _updatePickerBadges();
         try {
-            const res = await fetch(`${API_BASE_URL}/monitor/captures_with_emotions`);
+            const qs = monitorScopeQueryString();
+            const res = await fetch(`${API_BASE_URL}/monitor/captures_with_emotions${qs ? '?' + qs : ''}`);
             const data = await res.json();
             if (!data.success) throw new Error(data.error || '加载失败');
             _allPickerItems = data.items || [];
-            if (hintEl) hintEl.textContent = `共 ${_allPickerItems.length} 张`;
-            renderPickerGroups(groupImagesBy5Min(_allPickerItems));
+            const selectable = new Set(_allPickerItems.filter(isFaceSelectable).map(it => it.result_file));
+            _pickerSelected.forEach((rf) => { if (!selectable.has(rf)) _pickerSelected.delete(rf); });
+            const faceCb = document.getElementById('pickerFaceOnlyToggle');
+            if (faceCb) faceCb.checked = pickerFaceOnlyFilter;
+            refreshPickerView();
         } catch(err) {
             document.getElementById('pickerBody').innerHTML = `<div style="padding:40px; text-align:center; color:var(--danger);"><i class="fas fa-triangle-exclamation fa-2x"></i><p style="margin-top:12px;">加载失败: ${escapeHtml(err.message)}</p></div>`;
             if (hintEl) hintEl.textContent = '加载失败';
@@ -2161,34 +2272,38 @@
         }
         let html = '';
         for (const [key, items] of groups) {
-            const allSel = items.every(it => _pickerSelected.has(it.result_file));
-            const someSel = items.some(it => _pickerSelected.has(it.result_file));
+            const selectableItems = items.filter(isFaceSelectable);
+            const allSel = selectableItems.length > 0 && selectableItems.every(it => _pickerSelected.has(it.result_file));
+            const someSel = selectableItems.some(it => _pickerSelected.has(it.result_file));
             const checkAttr = allSel ? 'checked' : '';
             const indetermAttr = (someSel && !allSel) ? 'data-indeterminate="1"' : '';
+            const disabledAttr = selectableItems.length === 0 ? 'disabled' : '';
             const escapedKey = key.replace(/"/g, '&quot;');
             html += `<div class="picker-group" data-group="${escapedKey}">
                 <div class="picker-group-header" onclick="toggleGroupSelect('${escapedKey}')">
-                    <input type="checkbox" class="picker-group-check" ${checkAttr} ${indetermAttr} onclick="event.stopPropagation();toggleGroupSelect('${escapedKey}')" />
+                    <input type="checkbox" class="picker-group-check" ${checkAttr} ${indetermAttr} ${disabledAttr} onclick="event.stopPropagation();toggleGroupSelect('${escapedKey}')" />
                     <span class="picker-group-time"><i class="fas fa-clock"></i> ${key}</span>
-                    <span class="picker-group-count">${items.length} 张</span>
+                    <span class="picker-group-count">${items.length} 张（可选 ${selectableItems.length}）</span>
                 </div>
                 <div class="picker-img-grid">`;
             for (const item of items) {
-                const sel = _pickerSelected.has(item.result_file) ? 'selected' : '';
+                const selectable = isFaceSelectable(item);
+                const sel = selectable && _pickerSelected.has(item.result_file) ? 'selected' : '';
+                const disabledCls = selectable ? '' : 'disabled';
                 const emo = item.emotion_zh || item.emotion || '未知';
                 const icon = emotionIcons[item.emotion] || '😐';
                 const pct = item.confidence ? (item.confidence * 100).toFixed(0) : '?';
                 const timeStr = item.timestamp ? item.timestamp.substring(11, 19) : '';
                 const imgUrl = item.image_url || '';
                 const escapedRf = item.result_file.replace(/'/g, "\\'");
-                html += `<div class="picker-img-item ${sel}" onclick="toggleImageSelect('${escapedRf}')" data-result="${escapeHtml(item.result_file)}">
+                html += `<div class="picker-img-item ${sel} ${disabledCls}" onclick="toggleImageSelect('${escapedRf}')" data-result="${escapeHtml(item.result_file)}" data-selectable="${selectable ? '1' : '0'}" style="${selectable ? '' : 'opacity:.45; filter:grayscale(1); cursor:not-allowed;'}">
                     <div class="picker-img-check">✓</div>
                     ${imgUrl
                         ? `<img src="${API_BASE_URL}${imgUrl}" alt="capture" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy"><div class="picker-no-img" style="display:none; position:absolute; inset:0; background:var(--bg-secondary); align-items:center; justify-content:center; font-size:2rem; border-radius:var(--radius-xs);">📷</div>`
                         : `<div class="picker-no-img" style="display:flex; position:absolute; inset:0; background:var(--bg-secondary); align-items:center; justify-content:center; font-size:2rem; border-radius:var(--radius-xs);">📷</div>`
                     }
                     <div class="picker-img-time">${timeStr}</div>
-                    <div class="picker-img-badge">${icon} ${emo} ${pct}%</div>
+                    <div class="picker-img-badge">${icon} ${emo} ${pct}%${selectable ? '' : ' · 非人脸不可选'}</div>
                 </div>`;
             }
             html += '</div></div>';
@@ -2206,6 +2321,11 @@
     }
 
     function toggleImageSelect(resultFile) {
+        const item = _allPickerItems.find(it => it.result_file === resultFile);
+        if (!isFaceSelectable(item)) {
+            showStatus('仅可选择检测到人脸的照片', 'warning');
+            return;
+        }
         if (_pickerSelected.has(resultFile)) _pickerSelected.delete(resultFile);
         else _pickerSelected.add(resultFile);
         const el = document.querySelector(`.picker-img-item[data-result="${CSS.escape(resultFile)}"]`);
@@ -2219,8 +2339,9 @@
                 const m5 = Math.floor(dt.getMinutes() / 5) * 5;
                 return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(m5).padStart(2,'0')}` === gKey;
             });
-            const allS = gItems.every(it => _pickerSelected.has(it.result_file));
-            const someS = gItems.some(it => _pickerSelected.has(it.result_file));
+            const selectableItems = gItems.filter(isFaceSelectable);
+            const allS = selectableItems.length > 0 && selectableItems.every(it => _pickerSelected.has(it.result_file));
+            const someS = selectableItems.some(it => _pickerSelected.has(it.result_file));
             const cb = group.querySelector('.picker-group-check');
             if (cb) { cb.checked = allS; cb.indeterminate = someS && !allS; }
         }
@@ -2233,12 +2354,14 @@
             const m5 = Math.floor(dt.getMinutes() / 5) * 5;
             return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(m5).padStart(2,'0')}` === groupKey;
         });
-        const allSel = items.every(it => _pickerSelected.has(it.result_file));
-        items.forEach(it => { if (allSel) _pickerSelected.delete(it.result_file); else _pickerSelected.add(it.result_file); });
+        const selectableItems = items.filter(isFaceSelectable);
+        if (selectableItems.length === 0) return;
+        const allSel = selectableItems.every(it => _pickerSelected.has(it.result_file));
+        selectableItems.forEach(it => { if (allSel) _pickerSelected.delete(it.result_file); else _pickerSelected.add(it.result_file); });
         const group = document.querySelector(`.picker-group[data-group="${groupKey.replace(/"/g,'&quot;')}"]`);
         if (group) {
             const newState = !allSel;
-            group.querySelectorAll('.picker-img-item').forEach(el => el.classList.toggle('selected', newState));
+            group.querySelectorAll('.picker-img-item[data-selectable="1"]').forEach(el => el.classList.toggle('selected', newState));
             const cb = group.querySelector('.picker-group-check');
             if (cb) { cb.checked = newState; cb.indeterminate = false; }
         }
@@ -2246,9 +2369,15 @@
     }
 
     function pickerSelectAll() {
-        _allPickerItems.forEach(it => _pickerSelected.add(it.result_file));
-        document.querySelectorAll('.picker-img-item').forEach(el => el.classList.add('selected'));
-        document.querySelectorAll('.picker-group-check').forEach(cb => { cb.checked = true; cb.indeterminate = false; });
+        _allPickerItems.filter(isFaceSelectable).forEach(it => _pickerSelected.add(it.result_file));
+        document.querySelectorAll('.picker-img-item[data-selectable="1"]').forEach(el => el.classList.add('selected'));
+        document.querySelectorAll('.picker-group').forEach(group => {
+            const cb = group.querySelector('.picker-group-check');
+            if (!cb) return;
+            const selectableCount = group.querySelectorAll('.picker-img-item[data-selectable="1"]').length;
+            cb.checked = selectableCount > 0;
+            cb.indeterminate = false;
+        });
         _updatePickerBadges();
     }
 
@@ -2260,8 +2389,11 @@
     }
 
     function confirmImageSelection() {
-        selectedImageFiles = Array.from(_pickerSelected);
-        selectedImageStats = _allPickerItems.filter(it => _pickerSelected.has(it.result_file));
+        selectedImageFiles = Array.from(_pickerSelected).filter((rf) => {
+            const it = _allPickerItems.find(item => item.result_file === rf);
+            return isFaceSelectable(it);
+        });
+        selectedImageStats = _allPickerItems.filter(it => isFaceSelectable(it) && _pickerSelected.has(it.result_file));
         closeImagePicker();
         const badge = document.getElementById('selectedCountBadge');
         const startBtn = document.getElementById('startAnalysisBtn');
@@ -2319,6 +2451,7 @@
         if (modelTag) { modelTag.style.background='rgba(16,185,129,.1)'; modelTag.style.color='var(--success)'; modelTag.innerHTML='<i class="fas fa-users"></i> multiAgent'; }
 
         const params = new URLSearchParams({ days: 30, selected_files: JSON.stringify(selectedImageFiles), user_context: JSON.stringify(userContext) });
+        params.set('user_id', String(currentUserId));
 
         try {
             await new Promise((resolve, reject) => {
@@ -2678,7 +2811,8 @@
         const cam = parseInt(document.getElementById('cameraIndex').value)||0;
         if (!confirm(`开始监测？\n摄像头: ${cam}，间隔: ${ci}s`)) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/monitor/start`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({camera_index:cam, capture_interval:ci})});
+            const monitorScope = ensureMonitorScopeSessionId();
+            const res = await fetch(`${API_BASE_URL}/monitor/start`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({camera_index:cam, capture_interval:ci, user_id:currentUserId, monitor_scope_id:monitorScope})});
             const r = await res.json();
             if (r.success) { showStatus('监测已启动','success'); checkMonitorStatus(); }
             else showStatus(`启动失败: ${r.error}`,'error');
@@ -2698,7 +2832,8 @@
     async function analyzeMonitoringHistory() {
         try {
             showStatus('正在分析历史数据...','success');
-            const res = await fetch(`${API_BASE_URL}/monitor/analyze`);
+            const qs = monitorScopeQueryString();
+            const res = await fetch(`${API_BASE_URL}/monitor/analyze${qs ? '?' + qs : ''}`);
             const result = await res.json();
             if (result.success) {
                 showStatus(`已分析 ${result.total_results||0} 条数据`,'success');
@@ -2720,7 +2855,11 @@
         grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-spinner fa-spin"></i><p>加载中...</p></div>';
         if (meta) meta.textContent = '';
         try {
-            const res = await fetch(`${API_BASE_URL}/monitor/captures?order=${encodeURIComponent(order)}&limit=500`);
+            const qs = monitorScopeQueryString();
+            const capUrl = qs
+                ? `${API_BASE_URL}/monitor/captures?order=${encodeURIComponent(order)}&limit=500&${qs}`
+                : `${API_BASE_URL}/monitor/captures?order=${encodeURIComponent(order)}&limit=500`;
+            const res = await fetch(capUrl);
             const data = await res.json();
             if (!data.success) {
                 grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-circle-exclamation"></i><p>${escapeHtml(data.error || '加载失败')}</p></div>`;
@@ -2729,9 +2868,13 @@
             const n = data.captures ? data.captures.length : 0;
             const total = typeof data.total === 'number' ? data.total : n;
             if (meta) {
-                meta.textContent = total
-                    ? `共 ${total} 张 · 本页展示 ${data.returned != null ? data.returned : n} 张`
-                    : '暂无抓拍照片。先在「实时监测」中开始监测即可自动保存。';
+                if (!qs) {
+                    meta.textContent = '请先登录后查看抓拍照片。';
+                } else if (total) {
+                    meta.textContent = `共 ${total} 张 · 本页展示 ${data.returned != null ? data.returned : n} 张（当前用户历史）`;
+                } else {
+                    meta.textContent = '暂无抓拍照片。先在「实时监测」中开始监测即可自动保存。';
+                }
             }
             if (!n) {
                 grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-image"></i><p>还没有监测抓拍图</p></div>';
@@ -2773,7 +2916,8 @@
         document.addEventListener('keydown', captureModalEscHandler);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/monitor/captures/result/${encodeURIComponent(filename)}`);
+            const qs = monitorScopeQueryString();
+            const res = await fetch(`${API_BASE_URL}/monitor/captures/result/${encodeURIComponent(filename)}${qs ? '?' + qs : ''}`);
             const data = await res.json();
             if (!data.success) throw new Error(data.error || '加载失败');
 
@@ -2866,14 +3010,37 @@
         const uname = localStorage.getItem('currentUsername');
         if (uid && uname) {
             const parsed = parseInt(uid);
-            if (!isNaN(parsed)) { currentUserId=parsed; currentUsername=uname; isLoggedIn=true; showMainApp(); }
+            if (!isNaN(parsed)) {
+                currentUserId=parsed; currentUsername=uname; isLoggedIn=true;
+                ensureMonitorScopeSessionId();
+                showMainApp();
+            }
             else { localStorage.removeItem('currentUserId'); localStorage.removeItem('currentUsername'); showWelcomePage(); }
         } else showWelcomePage();
     }
 
+    function showAuthPage(pageId='welcomePage') {
+        ['welcomePage','registerPage','registerAltPage'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = id===pageId ? 'flex' : 'none';
+        });
+    }
+
     function showWelcomePage() {
-        document.getElementById('welcomePage').style.display='flex';
+        showAuthPage('welcomePage');
         document.getElementById('mainApp').classList.remove('active');
+    }
+
+    function openRegisterPage() {
+        showAuthPage('registerPage');
+    }
+
+    function openRegisterAltPage() {
+        showAuthPage('registerAltPage');
+    }
+
+    function backToLogin() {
+        showWelcomePage();
     }
 
     function showMainApp() {
@@ -2892,6 +3059,7 @@
         if (username==='test' && password==='12345') {
             currentUserId=1; currentUsername=username; isLoggedIn=true;
             localStorage.setItem('currentUserId','1'); localStorage.setItem('currentUsername',username);
+            localStorage.setItem('monitorScopeSessionId', newMonitorScopeSessionId());
             showMainApp(); showStatus('登录成功','success'); return;
         }
         try {
@@ -2901,21 +3069,43 @@
                 currentUserId = typeof result.user_id==='number'?result.user_id:parseInt(result.user_id);
                 currentUsername=username; isLoggedIn=true;
                 localStorage.setItem('currentUserId',String(currentUserId)); localStorage.setItem('currentUsername',currentUsername);
+                localStorage.setItem('monitorScopeSessionId', newMonitorScopeSessionId());
                 showMainApp(); showStatus('登录成功','success');
             } else showStatus(result.error||'登录失败','error');
         } catch(e) { showStatus('登录失败，检查网络连接','error'); }
     }
 
-    async function handleWelcomeRegister() {
-        const username = document.getElementById('welcomeUsername').value.trim();
-        const password = document.getElementById('welcomePassword').value;
+    async function registerWithCredentials(username, password) {
         if (!username||!password) { showStatus('请输入用户名和密码','error'); return; }
         try {
             const res = await fetch(`${API_BASE_URL}/auth/register`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password})});
             const result = await res.json();
-            if (result.success) showStatus('注册成功，请登录','success');
+            if (result.success) {
+                showStatus('注册成功，请登录','success');
+                backToLogin();
+                document.getElementById('welcomeUsername').value = username;
+                document.getElementById('welcomePassword').value = '';
+            }
             else showStatus(result.error||'注册失败','error');
         } catch(e) { showStatus('注册失败，检查网络','error'); }
+    }
+
+    async function handleWelcomeRegister() {
+        openRegisterPage();
+    }
+
+    async function submitRegisterPage() {
+        const username = document.getElementById('registerUsername').value.trim();
+        const password = document.getElementById('registerPassword').value;
+        const confirm = document.getElementById('registerConfirmPassword').value;
+        if (password !== confirm) { showStatus('两次密码不一致','error'); return; }
+        await registerWithCredentials(username, password);
+    }
+
+    async function submitRegisterAltPage() {
+        const username = document.getElementById('registerAltUsername').value.trim();
+        const password = document.getElementById('registerAltPassword').value;
+        await registerWithCredentials(username, password);
     }
 
     async function handleLogin() { await handleWelcomeLogin(); }
@@ -2924,6 +3114,7 @@
     function handleLogout() {
         currentUserId=1; currentUsername=''; isLoggedIn=false;
         localStorage.removeItem('currentUserId'); localStorage.removeItem('currentUsername');
+        localStorage.removeItem('monitorScopeSessionId');
         showWelcomePage(); showStatus('已退出','success');
         currentSessionId=null;
     }
@@ -3097,10 +3288,14 @@
                 <span><i class="fas fa-images" style="color:var(--primary); margin-right:8px;"></i>选择分析图片</span>
                 <button onclick="closeImagePicker()" title="关闭">✕</button>
             </div>
-            <div class="img-picker-toolbar">
+            <div class="img-picker-toolbar" style="flex-wrap:wrap; gap:8px; align-items:center;">
                 <button class="btn btn-outline btn-sm" onclick="pickerSelectAll()"><i class="fas fa-check-double"></i> 全选</button>
                 <button class="btn btn-outline btn-sm" onclick="pickerDeselectAll()"><i class="fas fa-xmark"></i> 全不选</button>
-                <span id="pickerLoadingHint" style="font-size:.82rem; color:var(--text-muted); margin-left:4px;"></span>
+                <label style="display:inline-flex; align-items:center; gap:6px; font-size:.85rem; color:var(--text-muted); cursor:pointer; user-select:none; margin-left:4px;">
+                    <input type="checkbox" id="pickerFaceOnlyToggle" onchange="onPickerFaceOnlyChange()" style="accent-color:var(--primary);">
+                    只显示可选人脸图
+                </label>
+                <span id="pickerLoadingHint" style="font-size:.82rem; color:var(--text-muted);"></span>
                 <span class="picker-sel-badge" id="pickerCountBadge">已选 0 张</span>
             </div>
             <div class="img-picker-body" id="pickerBody">
